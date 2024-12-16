@@ -7,42 +7,42 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: ls1010_port
+      revision: openbmc
       import:
         # By using name-allowlist we can clone only the modules that are
         # strictly needed by the application.
         name-allowlist:
           - hal_linkedsemi
     - name: wolfssl
-      url: https://github.com/wolfSSL/wolfssl.git
+      url: https://github.com/linkedsemi/wolfssl.git
       path: modules/lib/wolfssl
     - name: sdbusplus
-      url: https://github.com/openbmc/sdbusplus.git
+      url: https://github.com/linkedsemi/sdbusplus.git
       path: openbmc/sdbusplus
     - name: sdeventplus
-      url: https://github.com/openbmc/sdeventplus.git
+      url: https://github.com/linkedsemi/sdeventplus.git
       path: openbmc/sdeventplus
     - name: stdplus
-      url: https://github.com/openbmc/stdplus.git
+      url: https://github.com/linkedsemi/stdplus.git
       path: openbmc/stdplus
     - name: nlohmann_json
-      url: https://github.com/nlohmann/json.git
+      url: https://github.com/linkedsemi/nlohmann_json.git
       path: openbmc/nlohmann_json
     - name: fmt
-      url: https://github.com/fmtlib/fmt
+      url: https://github.com/linkedsemi/fmt
       path: openbmc/fmt
     - name: function2
-      url: https://github.com/Naios/function2
+      url: https://github.com/linkedsemi/function2
       path: openbmc/function2
     - name: phosphor-dbus-interfaces
-      url: https://github.com/openbmc/phosphor-dbus-interfaces.git
+      url: https://github.com/linkedsemi/phosphor-dbus-interfaces.git
       path: openbmc/phosphor-dbus-interfaces
     - name: phosphor-logging
-      url: https://github.com/openbmc/phosphor-logging.git
+      url: https://github.com/linkedsemi/phosphor-logging.git
       path: openbmc/phosphor-logging
     - name: phosphor-host-ipmid
-      url: https://github.com/openbmc/phosphor-host-ipmid.git
+      url: https://github.com/linkedsemi/phosphor-host-ipmid.git
       path: openbmc/phosphor-host-ipmid
     - name: boost
-      url: https://github.com/boostorg/boost.git
+      url: https://github.com/linkedsemi/boost.git
       path: openbmc/boost
