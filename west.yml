@@ -1,0 +1,48 @@
+manifest:
+
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/linkedsemi
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: ls1010_port
+      import:
+        # By using name-allowlist we can clone only the modules that are
+        # strictly needed by the application.
+        name-allowlist:
+          - hal_linkedsemi
+    - name: wolfssl
+      url: https://github.com/wolfSSL/wolfssl.git
+      path: modules/lib/wolfssl
+    - name: sdbusplus
+      url: https://github.com/openbmc/sdbusplus.git
+      path: openbmc/sdbusplus
+    - name: sdeventplus
+      url: https://github.com/openbmc/sdeventplus.git
+      path: openbmc/sdeventplus
+    - name: stdplus
+      url: https://github.com/openbmc/stdplus.git
+      path: openbmc/stdplus
+    - name: nlohmann_json
+      url: https://github.com/nlohmann/json.git
+      path: openbmc/nlohmann_json
+    - name: fmt
+      url: https://github.com/fmtlib/fmt
+      path: openbmc/fmt
+    - name: function2
+      url: https://github.com/Naios/function2
+      path: openbmc/function2
+    - name: phosphor-dbus-interfaces
+      url: https://github.com/openbmc/phosphor-dbus-interfaces.git
+      path: openbmc/phosphor-dbus-interfaces
+    - name: phosphor-logging
+      url: https://github.com/openbmc/phosphor-logging.git
+      path: openbmc/phosphor-logging
+    - name: phosphor-host-ipmid
+      url: https://github.com/openbmc/phosphor-host-ipmid.git
+      path: openbmc/phosphor-host-ipmid
+    - name: boost
+      url: https://github.com/boostorg/boost.git
+      path: openbmc/boost
