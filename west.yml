@@ -14,35 +14,46 @@ manifest:
         name-allowlist:
           - hal_linkedsemi
     - name: wolfssl
+      revision: zephyr
       url: https://github.com/linkedsemi/wolfssl.git
       path: modules/lib/wolfssl
     - name: sdbusplus
+      revision: zephyr
       url: https://github.com/linkedsemi/sdbusplus.git
       path: openbmc/sdbusplus
     - name: sdeventplus
+      revision: zephyr
       url: https://github.com/linkedsemi/sdeventplus.git
       path: openbmc/sdeventplus
     - name: stdplus
+      revision: zephyr
       url: https://github.com/linkedsemi/stdplus.git
       path: openbmc/stdplus
     - name: nlohmann_json
+      revision: zephyr
       url: https://github.com/linkedsemi/nlohmann_json.git
       path: openbmc/nlohmann_json
     - name: fmt
+      revision: zephyr
       url: https://github.com/linkedsemi/fmt
       path: openbmc/fmt
     - name: function2
+      revision: zephyr
       url: https://github.com/linkedsemi/function2
       path: openbmc/function2
     - name: phosphor-dbus-interfaces
+      revision: zephyr
       url: https://github.com/linkedsemi/phosphor-dbus-interfaces.git
       path: openbmc/phosphor-dbus-interfaces
     - name: phosphor-logging
+      revision: zephyr
       url: https://github.com/linkedsemi/phosphor-logging.git
       path: openbmc/phosphor-logging
     - name: phosphor-host-ipmid
+      revision: zephyr
       url: https://github.com/linkedsemi/phosphor-host-ipmid.git
       path: openbmc/phosphor-host-ipmid
     - name: boost
+      revision: zephyr
       url: https://github.com/linkedsemi/boost.git
       path: openbmc/boost
