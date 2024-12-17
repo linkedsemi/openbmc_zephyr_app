@@ -1,0 +1,5 @@
+/ {
+	chosen {
+		zephyr,uart_pipe = &uart0;
+	};
+};
