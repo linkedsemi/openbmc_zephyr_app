@@ -54,6 +54,10 @@ manifest:
       revision: zephyr
       remote: linkedsemi
       path: openbmc/phosphor-host-ipmid
+    - name: phosphor-net-ipmid
+      revision: zephyr
+      remote: linkedsemi
+      path: openbmc/phosphor-net-ipmid
     - name: boost
       revision: zephyr
       remote: linkedsemi
