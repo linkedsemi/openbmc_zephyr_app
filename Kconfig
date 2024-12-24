@@ -1,0 +1,8 @@
+config INTERNAL_CONFIG
+    bool
+    default y
+    select RISCV_ISA_EXT_F
+    select CPU_HAS_FPU
+    select FPU
+
+source "Kconfig.zephyr"

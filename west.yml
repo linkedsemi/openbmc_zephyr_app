@@ -1,12 +1,13 @@
 manifest:
 
   remotes:
-    - name: zephyrproject-rtos
+    - name: linkedsemi
       url-base: https://github.com/linkedsemi
+      # url-base: git@github.com:linkedsemi
 
   projects:
     - name: zephyr
-      remote: zephyrproject-rtos
+      remote: linkedsemi
       revision: openbmc
       import:
         # By using name-allowlist we can clone only the modules that are
@@ -14,35 +15,50 @@ manifest:
         name-allowlist:
           - hal_linkedsemi
     - name: wolfssl
-      url: https://github.com/linkedsemi/wolfssl.git
+      revision: zephyr
+      remote: linkedsemi
       path: modules/lib/wolfssl
     - name: sdbusplus
-      url: https://github.com/linkedsemi/sdbusplus.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/sdbusplus
     - name: sdeventplus
-      url: https://github.com/linkedsemi/sdeventplus.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/sdeventplus
     - name: stdplus
-      url: https://github.com/linkedsemi/stdplus.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/stdplus
     - name: nlohmann_json
-      url: https://github.com/linkedsemi/nlohmann_json.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/nlohmann_json
     - name: fmt
-      url: https://github.com/linkedsemi/fmt
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/fmt
     - name: function2
-      url: https://github.com/linkedsemi/function2
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/function2
     - name: phosphor-dbus-interfaces
-      url: https://github.com/linkedsemi/phosphor-dbus-interfaces.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/phosphor-dbus-interfaces
     - name: phosphor-logging
-      url: https://github.com/linkedsemi/phosphor-logging.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/phosphor-logging
     - name: phosphor-host-ipmid
-      url: https://github.com/linkedsemi/phosphor-host-ipmid.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/phosphor-host-ipmid
+    - name: phosphor-net-ipmid
+      revision: zephyr
+      remote: linkedsemi
+      path: openbmc/phosphor-net-ipmid
     - name: boost
-      url: https://github.com/linkedsemi/boost.git
+      revision: zephyr
+      remote: linkedsemi
       path: openbmc/boost
