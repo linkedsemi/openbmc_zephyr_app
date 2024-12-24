@@ -13,3 +13,4 @@ target_sources(app PRIVATE main.c
     dbus/sd-journal.c
     misc.c)
 zephyr_include_directories(inc)
+zephyr_linker_sources(SECTIONS ipmid_section.ld)
