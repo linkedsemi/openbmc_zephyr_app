@@ -25,6 +25,9 @@
 extern "C" {
 #endif
 
+#undef  WOLFSSL_ZEPHYR
+#define WOLFSSL_ZEPHYR
+
 #undef  TFM_TIMING_RESISTANT
 #define TFM_TIMING_RESISTANT
 
@@ -123,6 +126,9 @@ extern "C" {
 
 #undef  HAVE_FFDHE_2048
 #define HAVE_FFDHE_2048
+
+#undef  OPENSSL_EXTRA_X509_SMALL
+#define OPENSSL_EXTRA_X509_SMALL
 
 #ifdef __cplusplus
 }
