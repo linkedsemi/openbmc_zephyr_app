@@ -62,3 +62,7 @@ manifest:
       revision: zephyr
       remote: linkedsemi
       path: openbmc/boost
+    - name: tinyxml2
+      revision: master
+      remote: linkedsemi
+      path: modules/lib/tinyxml2
