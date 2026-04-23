@@ -1,0 +1,7 @@
+config APP_STACK_SECTION
+    string
+    prompt "APP_STACK_SECTION"
+    # default "PSRAM"
+    default ".noinit"
+
+source "Kconfig.zephyr"
