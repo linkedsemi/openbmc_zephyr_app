@@ -2,7 +2,19 @@
 
 ## 概述
 
-#### 本次版本发布，在凌思微基板管理控制芯片（Lite-BMC） **LS1020** 上提供了基础的 OpenBMC 功能。用户可以使用ipmid工具等方式给 BMC 发送指令，执行指定操作或进行状态查询等任务。  
+#### 本次版本发布，在凌思微基板管理控制芯片（Lite-BMC） **LS1020** 上提供了基础的 OpenBMC 功能。用户可以使用ipmid工具等方式给 BMC 发送指令，执行指定操作或进行状态查询等任务。
+
+#### 当前版本还不支持文件系统，只提供了 OpenBMC 的 host-ipmid 和 net-ipmid 两个应用的基本功能。
+
+#### 目前 OpenBMC 包含的模块如下：
+
+> - phosphor-host-ipmid 
+>
+> - phosphor-net-ipmid
+>
+> - phosphor-objmgr
+>
+> - phosphor-dbus-interfaces
 
 ## 软件架构
 
