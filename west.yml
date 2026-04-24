@@ -6,13 +6,13 @@ manifest:
   projects:
     - name: zephyr
       remote: linkedsemi
-      revision: dbus-ipmi-v1
+      revision: 1fd1da074ab6f74f7cbdee766032bdb0c173ce10
       import:
         name-allowlist:
           - fatfs
           - littlefs
     - name: ls_sdk
-      revision: qsh
+      revision: 240db145d57a5890938e922b636306d74e82d60c
       remote: linkedsemi
       path: modules/hal/linkedsemi
       groups:
@@ -28,81 +28,82 @@ manifest:
       remote: linkedsemi
       path: modules/lib/wolfssl
     - name: wolfssh
+      revision: fe25b4ef99eccb63ceec62f9948b6325dc279099
       remote: linkedsemi
       path: modules/lib/wolfssh
     - name: zephyr-devfs
-      revision: main
+      revision: 803895eb210af4dd14ab6559b47d38447abd80fe
       remote: linkedsemi
       path: modules/zephyr-devfs
     - name: safeclib
-      revision: zephyr
+      revision: 4e279a5254d7e443e3659fec95cf25ceaa4c8a27
       remote: linkedsemi
       path: modules/safeclib
     - name: jtag_asd
-      revision: master
+      revision: 9bf8e9ca6a7e28fb6f33758f0c463f358b16ad28
       remote: linkedsemi
       path: modules/jtag_asd
     - name: basu
-      revision: dbus-ipmi-v1
+      revision: 0aa6338cdc4cb218569cd6624c67ee87c0c5021b
       remote: linkedsemi
       path: modules/lib/basu
     - name: dbus-broker
-      revision: dbus-ipmi-v1
+      revision: 7d02400f6969125740b9a7165050c08f892f8927
       remote: linkedsemi
       path: modules/lib/dbus-broker
     - name: nlohmann_json
-      revision: dbus-ipmi-v1
+      revision: 492e14345e797fe7f984bd936e0fcb6714f7791d
       remote: linkedsemi
       path: openbmc/nlohmann_json
     - name: phosphor-host-ipmid
-      revision: dbus-ipmi-v1
+      revision: 61d3806270770e518b399d735b054a5dbb15c071
       remote: linkedsemi
       path: openbmc/phosphor-host-ipmid
     - name: boost
-      revision: dbus-ipmi-v1
+      revision: 6c97e236d49a927b2b37c006647c7f3a84af7be4
       remote: linkedsemi
       path: openbmc/boost
     - name: sdeventplus
-      revision: dbus-ipmi-v1
+      revision: 0b6195925e74737350fb597ca1f713e9188d92b8
       remote: linkedsemi
       path: openbmc/sdeventplus
     - name: stdplus
-      revision: dbus-ipmi-v1
+      revision: a3377cd41359f5992caa82509fb66d73b4a031ff
       remote: linkedsemi
       path: openbmc/stdplus
     - name: fmt
-      revision: dbus-ipmi-v1
+      revision: 5d997b647ca90a524acaf1201f7ebfb4a4c1264b
       remote: linkedsemi
       path: openbmc/fmt
     - name: function2
-      revision: dbus-ipmi-v1
+      revision: 75f310a0d92c15ae5386c10dd4a6884d9d0465e2
       remote: linkedsemi
       path: openbmc/function2
     - name: sdbusplus
-      revision: dbus-ipmi-v1
+      revision: fc834d0882c19c9b13568deeaa2226634e3c397d
       remote: linkedsemi
       path: openbmc/sdbusplus
     - name: phosphor-logging
-      revision: dbus-ipmi-v1
+      revision: 7e36578098f0cb73ed5d8def95c7a437e937aa6d
       remote: linkedsemi
       path: openbmc/phosphor-logging
     - name: phosphor-dbus-interfaces
-      revision: dbus-ipmi-v1
+      revision: e0e76dc4e130f306d95ca5617f2f37c76eccf122
       remote: linkedsemi
       path: openbmc/phosphor-dbus-interfaces
     - name: phosphor-objmgr
-      revision: dbus-ipmi-v1
+      revision: 260c0b9645237ab98c8fb88e030ab94c45492c0a
       remote: linkedsemi
       path: openbmc/phosphor-objmgr
     - name: zephyr-osal
-      revision: dbus-ipmi-v1
+      revision: 019c93ff1bb502dc99893b75c8f31ce63f762787
       remote: linkedsemi
       path: openbmc/zephyr-osal
     - name: tinyxml2
-      revision: dbus-ipmi-v1
+      revision: 3ed7be2e5c44bbd18bc05314ea9f1fa5c915e3aa
       remote: linkedsemi
       path: openbmc/tinyxml2
     - name: phosphor-net-ipmid
-      revision: dbus-ipmi-v1
+      revision: 89f16a1fd8e52124b7d0a95a85a72b2f7572d5e2
       remote: linkedsemi
       path: openbmc/phosphor-net-ipmid
