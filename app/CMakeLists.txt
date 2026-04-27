@@ -15,6 +15,8 @@ target_sources(app PRIVATE
   src/task_def.cpp
   src/misc.c
   src/net_stack_cfg.c
+  src/dbroker.c
+  src/socketpool.c
 )
 
 # Handle Unix socket compatibility
@@ -30,6 +32,12 @@ target_link_options(app PRIVATE -Wl,--no-relax)
 if (CONFIG_ZEPHYRBMC_FILESYSTEM)
 zephyr_library_link_libraries(filesystem)
 endif()
+
+zephyr_library_link_libraries(
+	dbus-broker
+	basu
+)
+
 # zephyr_library_link_libraries(sd-bus)
 zephyr_library_link_libraries(zephyr-osal)
 # zephyr_library_link_libraries(boost)
