@@ -98,6 +98,7 @@ static void test_thread_entry(void *p1, void *p2, void *p3)
 #include "task_enable.hpp"
 #include "thread_dependency_mgr.hpp"
 #include <printk_thread.h>
+#include <ff.h>
 
 #ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
 FileSystemParams fs_params;
@@ -303,6 +304,15 @@ THREAD_DEFINE(busctl, busctl_init, busctl_ready_sem, "zbus_broker");
 // THREAD_DEFINE_NO_SEM(eepromtest, eepromtest_init);
 // #endif
 /*** end of test thread ***/
+
+static FATFS fat_fs;
+/* mounting info */
+static struct fs_mount_t sd2mp = {
+	.type = FS_FATFS,
+	.fs_data = &fat_fs,
+    .mnt_point = "/SD2:"
+};
+
 static int filesystem_init()
 {
 #ifdef CONFIG_BOARD_QEMU_RISCV32_QEMU_VIRT_RISCV32
@@ -314,7 +324,14 @@ static int filesystem_init()
     fs_params_init();
     storage_fs_init();
 #endif
-    return 0;
+
+    int ret = 0;
+    ret = fs_mount(&sd2mp);
+    if (ret) {
+        while(1);
+    }
+
+    return ret;
 }
 
 // static int filesystem_init_rslt = filesystem_init();
@@ -345,6 +362,8 @@ int main(void)
 
     // k_sem_take(&net_config_init_ready_sem, K_SECONDS(20));
     // k_sleep(K_SECONDS(5));
+
+    filesystem_init();
 
     LOG_INF("Starting BMC application with dependency management...\n");
 
