@@ -79,4 +79,10 @@ config APP_STACK_SECTION
     # default "PSRAM"
     default ".noinit"
 
+config OPENBMC_ZEPHYR
+	bool "OpenBMC project build (global control)"
+	default y
+	help
+	  Global flag to indicate this is OpenBMC build.
+
 source "Kconfig.zephyr"
