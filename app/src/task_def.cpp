@@ -959,14 +959,20 @@ int net_ipmid_init()
 #endif
 
 #if defined(CONFIG_OPENBMC_PHOSPHOR_LOGGING) && defined(ENABLE_OPENBMC_PHOSPHOR_LOGGING)
-// phosphor-logging
-MODULE_DEFINE_CHAN_OBSERVER(phosphor_logging);
-extern int logging_main(int /*argc*/, char* /*argv*/[]);
+#ifdef __ZEPHYR__
+extern "C" int logging_main(void);
+#else
+extern "C" int logging_main(int /*argc*/, char* /*argv*/[]);
+#endif
 K_SEM_DEFINE(logging_ready_sem, 0, 1);
 
 void* logging_thread_handler(void *arg)
 {
+#ifdef __ZEPHYR__
+    logging_main();
+#else
     logging_main(0, NULL);
+#endif
     return NULL;
 }
 int logging_init()

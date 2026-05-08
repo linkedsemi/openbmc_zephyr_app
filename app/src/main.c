@@ -147,7 +147,7 @@ THREAD_DEFINE(objmgr, objmgr_init, objmgr_ready_sem, "zbus_broker");
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_LOGGING
-THREAD_DEFINE(logging, logging_init, logging_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(logging, logging_init, logging_ready_sem, "dbus_broker");
 #endif
 
 #ifdef ENABLE_PHOSPHOR_USER_MANAGER
