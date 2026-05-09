@@ -959,26 +959,17 @@ int net_ipmid_init()
 #endif
 
 #if defined(CONFIG_OPENBMC_PHOSPHOR_LOGGING) && defined(ENABLE_OPENBMC_PHOSPHOR_LOGGING)
-#ifdef __ZEPHYR__
 extern "C" int logging_main(void);
-#else
-extern "C" int logging_main(int /*argc*/, char* /*argv*/[]);
-#endif
 K_SEM_DEFINE(logging_ready_sem, 0, 1);
 
 void* logging_thread_handler(void *arg)
 {
-#ifdef __ZEPHYR__
     logging_main();
-#else
-    logging_main(0, NULL);
-#endif
     return NULL;
 }
 int logging_init()
 {
     pthread_t thread;
-
     CREATE_TASK_WITH_PTHREAD(&thread, logging_thread, PHOSPHOR_LOGGING_THREAD_STACK_SIZE);
     return 0;
 }
