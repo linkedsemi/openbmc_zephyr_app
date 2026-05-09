@@ -173,10 +173,10 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
 ```jsx
    > 编译openbmc：
       cd [工作区目录]
-      west build -p auto -b lsqsh_evb@2os_cpu1_xip/lsqsh/cpu1 openbmc_zephyr_app/app
+      west build -p auto -b lsqsh_evb@1os_xip/lsqsh/cpu1 openbmc_zephyr_app/app
 
    > 烧录openbmc：
-      使用FlashProgrammer或flash命令，烧录[工作区目录]/build/zephyr/下编译生成的zephyr_flash_bram_xip_lsqsh_evb_2os_cpu1_xip_lsqsh_cpu1.bin
+      使用FlashProgrammer或flash命令，烧录[工作区目录]/build/zephyr/下编译生成的zephyr_flash_bram_xip_lsqsh_evb_1os_xip_lsqsh_cpu1.bin
 ```
 
 ## ipmid应用使用说明
