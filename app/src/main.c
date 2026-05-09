@@ -15,6 +15,9 @@
 /* SD-Event test suite */
 #include "test_sd_event.h"
 
+/* Filesystem default config initialization */
+#include "config_fs.h"
+
 LOG_MODULE_REGISTER(TEST_BROKER, LOG_LEVEL_DBG);
 
 /*
@@ -154,9 +157,14 @@ THREAD_DEFINE(logging, logging_init, logging_ready_sem, "zbus_broker", "objmgr")
 THREAD_DEFINE(user_manager, user_manager_init, user_manager_ready_sem, "zbus_broker", "objmgr");
 #endif
 
+// 网络栈配置线程 - 必须在 net-ipmid 之前初始化
+#ifdef ENABLE_OPENBMC_PHOSPHOR_NET_IPMID
+THREAD_DEFINE(net_stack_cfg, net_stack_cfg_init, net_stack_cfg_ready_sem);
+#endif
+
 #ifdef ENABLE_OPENBMC_PHOSPHOR_HOST_IPMID
 // THREAD_DEFINE(ipmid, ipmid_init, host_ipmid_ready_sem, "dbus_broker", "objmgr", "network_manager");
-THREAD_DEFINE(ipmid, ipmid_init, host_ipmid_ready_sem, "dbus_broker");
+THREAD_DEFINE(ipmid, ipmid_init, host_ipmid_ready_sem, "dbus_broker", "net_stack_cfg");
 #endif
 
 #ifdef ENABLE_OPENBMC_IPMITOOL
@@ -190,9 +198,6 @@ THREAD_DEFINE(systemd_networkd, systemd_networkd_init, systemd_networkd_ready_se
 #ifdef ENABLE_OPENBMC_PHOSPHOR_NETWORK
 THREAD_DEFINE(network_manager, network_manager_init, network_manager_ready_sem, "zbus_broker", "objmgr", "systemd_networkd");
 #endif
-
-// 网络栈配置线程 - 必须在 net-ipmid 之前初始化
-THREAD_DEFINE(net_stack_cfg, net_stack_cfg_init, net_stack_cfg_ready_sem);
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_NET_IPMID
 // net-ipmid 依赖于 net_stack_cfg，确保网络已配置
@@ -364,6 +369,8 @@ int main(void)
     // k_sleep(K_SECONDS(5));
 
     filesystem_init();
+    //only use once at the first time to sue filesysem, or you need to add new jsonfile or path.
+    config_fs_init();
 
     LOG_INF("Starting BMC application with dependency management...\n");
 

@@ -21,7 +21,6 @@ int net_stack_cfg_do_once(void)
 	int nerr;
 
 	LOG_INF("net_stack_cfg: delay before bring-up");
-	k_msleep(2000);
 
 	if (!device_is_ready(eth1)) {
 		LOG_ERR("eth1 not ready");
