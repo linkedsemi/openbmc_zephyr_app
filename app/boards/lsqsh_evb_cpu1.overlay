@@ -1,0 +1,16 @@
+&chosen {
+    zephyr,sram = &sram;
+};
+
+&eth1 {
+    status = "okay";
+};
+
+&mdio1 {
+    status = "okay";
+};
+
+
+&psram {
+    status = "okay";
+};

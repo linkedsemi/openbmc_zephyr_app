@@ -76,8 +76,8 @@ endif # DBROKER
 config APP_STACK_SECTION
     string
     prompt "APP_STACK_SECTION"
-    # default "PSRAM"
-    default ".noinit"
+    default "PSRAM"
+    # default ".noinit"
 
 config OPENBMC_ZEPHYR
 	bool "OpenBMC project build (global control)"
