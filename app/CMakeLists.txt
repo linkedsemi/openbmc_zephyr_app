@@ -17,6 +17,7 @@ target_sources(app PRIVATE
   src/net_stack_cfg.c
   src/dbroker.c
   src/socketpool.c
+  src/config_fs.c
 )
 
 # Handle Unix socket compatibility
