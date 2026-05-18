@@ -681,6 +681,7 @@ static int mkdir_dir(const char *path)
     char tmp[PATH_MAX];
     char *p;
     int ret;
+    size_t start_idx = 1;  // skip first '/'
 
     if (path == NULL || *path == '\0') {
         return -EINVAL;
@@ -692,9 +693,23 @@ static int mkdir_dir(const char *path)
     /* Skip the leading mount prefix (e.g. /SD2:) to avoid creating
      * an empty directory entry.
      */
-    for (p = tmp + 1; *p; p++) {
+    if (tmp[0] == '/') {
+        char *colon = strchr(tmp + 1, ':');
+        if (colon != NULL && *(colon + 1) == '/') {
+            /* Skip the "/xxx:/" prefix, pointing to the first valid directory character */
+            start_idx = (colon - tmp) + 2;  // Position after ':' and '/'
+        }
+    }
+
+    /* If the starting index is beyond the string length, the path is just the mount point */
+    if (start_idx >= strlen(tmp)) {
+        return 0;
+    }
+
+    /* Create directories level by level starting from the mount point */
+    for (p = tmp + start_idx; *p; p++) {
         if (*p == '/') {
-            *p = 0;
+            *p = '\0';
             ret = fs_mkdir(tmp);
             if (ret < 0 && ret != -EEXIST) {
                 printk("mkdir failed: %s, %d\n", tmp, ret);

@@ -101,7 +101,10 @@ static void test_thread_entry(void *p1, void *p2, void *p3)
 #include "task_enable.hpp"
 #include "thread_dependency_mgr.hpp"
 #include <printk_thread.h>
-#include <ff.h>
+// #include <ff.h>
+#ifdef CONFIG_FILE_SYSTEM_LITTLEFS
+#include <zephyr/fs/littlefs.h>
+#endif
 
 #ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
 FileSystemParams fs_params;
@@ -310,12 +313,15 @@ THREAD_DEFINE(busctl, busctl_init, busctl_ready_sem, "zbus_broker");
 // #endif
 /*** end of test thread ***/
 
-static FATFS fat_fs;
+FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(lfsfs);
+
 /* mounting info */
 static struct fs_mount_t sd2mp = {
-	.type = FS_FATFS,
-	.fs_data = &fat_fs,
-    .mnt_point = "/SD2:"
+	.type = FS_LITTLEFS,
+	.fs_data = &lfsfs,
+    .mnt_point = "/SD2:",
+	.flags = FS_MOUNT_FLAG_USE_DISK_ACCESS,
+    .storage_dev = "SD2",
 };
 
 static int filesystem_init()
@@ -335,7 +341,6 @@ static int filesystem_init()
     if (ret) {
         while(1);
     }
-
     return ret;
 }
 
