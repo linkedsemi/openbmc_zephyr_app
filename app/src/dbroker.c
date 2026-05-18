@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <soc.h>
 #include <errno.h>
+#include "task_def.hpp"
 
 /* dbus-broker headers */
 // #include <broker/broker.h>
@@ -342,7 +343,7 @@ static void broker_thread_entry(void *p1, void *p2, void *p3)
     ARG_UNUSED(p3);
     int r;
 
-    // LOG_INF("[DBus Broker] Starting D-Bus Broker Deployment...");
+    // printk("broker thread zephyr priority: %d\n", k_thread_priority_get(k_current_get()));
 
     /* Run the broker deployment using standard broker_run() */
     r = deploy_standard_broker();
@@ -354,14 +355,21 @@ static void broker_thread_entry(void *p1, void *p2, void *p3)
     }
 }
 
-/* Thread stack for broker */
-K_THREAD_STACK_DEFINE(broker_stack, CONFIG_DBUS_BROKER_STACK_SIZE);
-static struct k_thread broker_thread;
+/* Thread stack for broker - defined by CREATE_TASK_WITH_PTHREAD macro */
+static pthread_t broker_thread;
+
+/* Broker handler wrapper for CREATE_TASK_WITH_PTHREAD macro */
+static void *broker_handler(void *arg)
+{
+    (void)arg;
+    broker_thread_entry(NULL, NULL, NULL);
+    return NULL;
+}
 
 /*
  * D-Bus Broker initialization
  */
-static int dbus_broker_init(void)
+static int dbus_broker_main(void)
 {
     int r;
     // LOG_INF("[DBus Broker] Initializing D-Bus Broker subsystem...");
@@ -376,13 +384,8 @@ static int dbus_broker_init(void)
     LOG_INF("[DBus Broker] Socketpool initialized successfully");
 #endif
     
-    /* Create broker thread */
-    k_thread_create(&broker_thread, 
-                   broker_stack, 
-                   K_THREAD_STACK_SIZEOF(broker_stack), 
-                   broker_thread_entry, 
-                   NULL, NULL, NULL, 
-                   CONFIG_DBUS_BROKER_PRIORITY, 0, K_NO_WAIT);
+    /* Create broker thread using pthread-based creation */
+    CREATE_TASK_WITH_PTHREAD(&broker_thread, broker, DBUS_BROKER_THREAD_STACK_SIZE);
     
     LOG_INF("[DBus Broker] D-Bus Broker subsystem initialized");
     return 0;
@@ -390,7 +393,7 @@ static int dbus_broker_init(void)
 
 
 /* Register initialization function */
-SYS_INIT(dbus_broker_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+SYS_INIT(dbus_broker_main, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
 
 
@@ -435,8 +438,7 @@ static int request_dbroker_connection(int *broker_fd, int *client_fd)
         return r;
     }
 
-    LOG_DBG("[DBroker API] Allocated connection: client_fd=%d, broker_fd=%d",
-            *client_fd, *broker_fd);
+    // printk("[DBroker API] request_dbroker_connection: allocated client_fd=%d, broker_fd=%d\n", *client_fd, *broker_fd);
 
     /* Add the broker_fd to the broker to create a peer */
     r = socketpool_add_peer_to_broker(g_broker, *broker_fd);
@@ -635,6 +637,7 @@ int connect_to_dbroker(sd_bus **bus)
     // if (socket_fd) {
     //     *socket_fd = client_fd;
     // }
+    printk("connected to broker\n");
 
     return 0;
 }

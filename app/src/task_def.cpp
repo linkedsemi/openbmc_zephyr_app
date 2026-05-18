@@ -3,6 +3,9 @@
 #include "task_def.hpp"
 #include "task_enable.hpp"
 #include <printk_thread.h>
+#include <string.h>
+
+#define APP_PRI 10 // zephyr priority = 14 - APP_PRI
 
 int create_task_with_pthread(pthread_t *thread, const char *name, void *stack, size_t stack_size, void* (*routine)(void *), bool join_flag)
 {
@@ -34,6 +37,13 @@ int create_task_with_pthread(pthread_t *thread, const char *name, void *stack, s
     }
 
     pthread_setname_np(*thread, name);
+
+    /* Set priority for non-broker threads using POSIX API */
+    if (strncmp(name, "broker", 6) != 0)
+    {
+        struct sched_param param = { .sched_priority = APP_PRI };
+        pthread_setschedparam(*thread, SCHED_OTHER, &param);
+    }
 
     if (join_flag)
     {

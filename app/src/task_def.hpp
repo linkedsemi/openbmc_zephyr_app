@@ -30,7 +30,7 @@ int create_task_with_pthread(pthread_t *thread, const char *name,
 
 // zbus broker
 #define CONFIG_THREAD_PRI_DBUS_BROKER 10
-#define DBUS_BROKER_THREAD_STACK_SIZE (1 * 1024)
+#define DBUS_BROKER_THREAD_STACK_SIZE (6 * 1024)
 int dbus_broker_init();
 extern struct k_sem dbus_broker_ready_sem;
 
