@@ -4,15 +4,19 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(openbmc LANGUAGES C CXX)
 
+target_include_directories(app PRIVATE include)
 
 target_sources(app PRIVATE
-  src/main.c
-  src/sys_mmap_impl.c
-  src/test_deployment.c
-  src/test_sd_event.c
-  # ${CMAKE_CURRENT_LIST_DIR}/../../samples/test_event/sd_event_test.c
+  src/main.cpp
   src/thread_dependency_mgr.cpp
   src/task_def.cpp
+)
+
+target_sources(app PRIVATE
+  src/sys_mmap_impl.c
+#   src/test_deployment.c
+  src/test_sd_event.c
+  # ${CMAKE_CURRENT_LIST_DIR}/../../samples/test_event/sd_event_test.c
   src/misc.c
   src/net_stack_cfg.c
   src/dbroker.c
@@ -42,7 +46,7 @@ zephyr_library_link_libraries(
 
 # zephyr_library_link_libraries(sd-bus)
 zephyr_library_link_libraries(zephyr-osal)
-# zephyr_library_link_libraries(boost)
+zephyr_library_link_libraries(boost)
 # zephyr_library_link_libraries(zephyr-test)
 # zephyr_library_link_libraries(phosphor-user-manager)
 

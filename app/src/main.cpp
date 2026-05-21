@@ -4,10 +4,10 @@
 #include <errno.h>
 
 /* dbus-broker headers */
-#include "broker/broker.h"
+// #include "broker/broker.h"
 
 /* Deployment implementation */
-#include "test_deployment.h"
+// #include "test_deployment.h"
 
 /* D-Bus broker subsystem */
 #include "dbus_broker.h"
@@ -23,73 +23,73 @@ LOG_MODULE_REGISTER(TEST_BROKER, LOG_LEVEL_DBG);
 /*
  * Test Thread - Tests the deployed broker
  */
-static void test_thread_entry(void *p1, void *p2, void *p3)
-{
-    ARG_UNUSED(p1);
-    ARG_UNUSED(p2);
-    ARG_UNUSED(p3);
-    int r;
-    int retry_count = 0;
-    const int max_retries = 100; /* Wait up to 10 seconds */
+// static void test_thread_entry(void *p1, void *p2, void *p3)
+// {
+//     ARG_UNUSED(p1);
+//     ARG_UNUSED(p2);
+//     ARG_UNUSED(p3);
+//     int r;
+//     int retry_count = 0;
+//     const int max_retries = 100; /* Wait up to 10 seconds */
 
-    LOG_INF("[Test Thread] Starting - waiting for broker initialization...");
+//     LOG_INF("[Test Thread] Starting - waiting for broker initialization...");
 
-    /* Wait for broker to be ready */
-    while ((g_broker == NULL || g_controller_fds[0] < 0 || !deploy_state.broker_ready)
-            && retry_count < max_retries) {
-        // LOG_DBG("[Test Thread] Waiting... retry %d, g_broker: %p, fd: %d",
-        //         retry_count, g_broker, g_controller_fds[0]);
-        k_msleep(100);
-        retry_count++;
-    }
+//     /* Wait for broker to be ready */
+//     while ((g_broker == NULL || g_controller_fds[0] < 0 || !deploy_state.broker_ready)
+//             && retry_count < max_retries) {
+//         // LOG_DBG("[Test Thread] Waiting... retry %d, g_broker: %p, fd: %d",
+//         //         retry_count, g_broker, g_controller_fds[0]);
+//         k_msleep(100);
+//         retry_count++;
+//     }
 
-    if (g_broker == NULL) {
-        LOG_ERR("[Test Thread] Broker failed to initialize within timeout");
-        return;
-    }
+//     if (g_broker == NULL) {
+//         LOG_ERR("[Test Thread] Broker failed to initialize within timeout");
+//         return;
+//     }
 
-    if (g_controller_fds[0] < 0) {
-        LOG_ERR("[Test Thread] Controller FDs not properly initialized");
-        return;
-    }
+//     if (g_controller_fds[0] < 0) {
+//         LOG_ERR("[Test Thread] Controller FDs not properly initialized");
+//         return;
+//     }
 
-    LOG_INF("[Test Thread] Broker is ready! g_broker=%p", g_broker);
-    LOG_INF("[Test Thread] Controller FDs: %d, %d", g_controller_fds[0], g_controller_fds[1]);
+//     LOG_INF("[Test Thread] Broker is ready! g_broker=%p", g_broker);
+//     LOG_INF("[Test Thread] Controller FDs: %d, %d", g_controller_fds[0], g_controller_fds[1]);
 
-    /* Run deployment verification tests */
-    r = test_broker_deployment();
+//     /* Run deployment verification tests */
+//     r = test_broker_deployment();
 
-    if (r == 0) {
-        LOG_INF("[Test Thread] Deployment verification passed!");
-    } else {
-        LOG_WRN("[Test Thread] Deployment verification failed: %d", r);
-    }
+//     if (r == 0) {
+//         LOG_INF("[Test Thread] Deployment verification passed!");
+//     } else {
+//         LOG_WRN("[Test Thread] Deployment verification failed: %d", r);
+//     }
 
-    /* Wait a bit more for listener to be fully ready */
-    k_msleep(500);
+//     /* Wait a bit more for listener to be fully ready */
+//     k_msleep(500);
 
-    /* Wait for service provider to be ready */
-    LOG_INF("[Test Thread] Waiting for service provider to be ready...");
-    retry_count = 0;
-    while (!deploy_state.service_provider_ready && retry_count < 100) {
-        k_msleep(100);
-        retry_count++;
-    }
-    if (deploy_state.service_provider_ready) {
-        LOG_INF("[Test Thread] Service provider is ready!");
-    } else {
-        LOG_WRN("[Test Thread] Service provider not ready after timeout");
-    }
+//     /* Wait for service provider to be ready */
+//     LOG_INF("[Test Thread] Waiting for service provider to be ready...");
+//     retry_count = 0;
+//     while (!deploy_state.service_provider_ready && retry_count < 100) {
+//         k_msleep(100);
+//         retry_count++;
+//     }
+//     if (deploy_state.service_provider_ready) {
+//         LOG_INF("[Test Thread] Service provider is ready!");
+//     } else {
+//         LOG_WRN("[Test Thread] Service provider not ready after timeout");
+//     }
 
-    /* Start client threads to test broker functionality */
-    LOG_INF("[Test Thread] Starting client threads...");
-    r = start_client_threads();
-    if (r < 0) {
-        LOG_ERR("[Test Thread] Failed to start client threads: %d", r);
-    } else {
-        LOG_INF("[Test Thread] Client threads started successfully");
-    }
-}
+//     /* Start client threads to test broker functionality */
+//     LOG_INF("[Test Thread] Starting client threads...");
+//     r = start_client_threads();
+//     if (r < 0) {
+//         LOG_ERR("[Test Thread] Failed to start client threads: %d", r);
+//     } else {
+//         LOG_INF("[Test Thread] Client threads started successfully");
+//     }
+// }
 
 /* Thread stacks with appropriate priorities */
 // K_THREAD_DEFINE(test_thread, 4096, test_thread_entry, NULL, NULL, NULL, 6, 0, 0);
@@ -101,47 +101,14 @@ static void test_thread_entry(void *p1, void *p2, void *p3)
 #include "task_enable.hpp"
 #include "thread_dependency_mgr.hpp"
 #include <printk_thread.h>
-// #include <ff.h>
+#include "common_io.hpp"
+
+#include <ff.h>
 #ifdef CONFIG_FILE_SYSTEM_LITTLEFS
 #include <zephyr/fs/littlefs.h>
 #endif
 
-#ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
-FileSystemParams fs_params;
-extern "C"
-{
-extern uint8_t flash_ls_client_read_ear(const struct device* dev);
-}
-void fs_params_init()
-{
-#if defined(CONFIG_FILE_SYSTEM_LITTLEFS)
-#define PARTITION_NODE_RO_A DT_NODELABEL(ro_lfs_a)
-#define PARTITION_NODE_RO_B DT_NODELABEL(ro_lfs_b)
-    const struct device* const flash_dev = DEVICE_DT_GET(DT_NODELABEL(qspi1));
-    uint8_t ear = flash_ls_client_read_ear(flash_dev);
-    if (ear == 0x0)
-    {
-        LOG_INF("Selecting RO_A partition (EAR=0x%02X)", ear);
-        FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RO_A);
-        fs_params.mp_ro_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RO_A);
-    }
-    else
-    {
-        LOG_INF("Selecting RO_B partition (EAR=0x%02X)", ear);
-        FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RO_B);
-        fs_params.mp_ro_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RO_B);
-    }
-
-#define PARTITION_NODE_RW DT_NODELABEL(rw_lfs)
-    FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RW);
-    fs_params.mp_rw_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RW);
-#endif
-
-#if defined(CONFIG_STORAGE_MEDIA_EMMC)
-    fs_params.sdhc_dev = DEVICE_DT_GET(DT_ALIAS(sdhc0));
-#endif
-}
-#endif
+thread_local boost::asio::io_context io;
 
 // Define threads and their dependencies
 #ifdef ENABLE_DBUS_BROKER
@@ -243,11 +210,12 @@ THREAD_DEFINE(dump_manager, dump_manager_init, dump_manager_ready_sem, "zbus_bro
 #endif
 
 #ifdef ENABLE_OPENBMC_FRU_DEVICE
-THREAD_DEFINE(fru_device, fru_device_init, fru_device_ready_sem, "zbus_broker");
+THREAD_DEFINE(fru_device, fru_device_init, fru_device_ready_sem, "dbus_broker");
 #endif
 
 #ifdef ENABLE_OPENBMC_ENTITY_MANAGER
-THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "zbus_broker", "objmgr", "fru_device");
+// THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "zbus_broker", "objmgr", "fru_device");
+THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "dbus_broker");
 #endif
 
 /*begin of dbus sensor related thread*/
@@ -313,39 +281,142 @@ THREAD_DEFINE(busctl, busctl_init, busctl_ready_sem, "zbus_broker");
 // #endif
 /*** end of test thread ***/
 
-FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(lfsfs);
 
+extern "C" {
+#include <overlay_fs.h>
+// #include "zephyr/drivers/misc/linkedsemi/mbox_linkedsemi.h"
+}
+
+// #ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
+static struct fs_mount_t *mp_ro_lfs;
+static struct fs_mount_t *mp_rw_lfs;
+
+static FATFS fat_fs;
 /* mounting info */
 static struct fs_mount_t sd2mp = {
-	.type = FS_LITTLEFS,
-	.fs_data = &lfsfs,
+	.type = FS_FATFS,
     .mnt_point = "/SD2:",
-	.flags = FS_MOUNT_FLAG_USE_DISK_ACCESS,
-    .storage_dev = "SD2",
+	.fs_data = &fat_fs,
 };
 
+
+// FileSystemParams fs_params;
+// extern "C"
+// {
+// extern uint8_t flash_ls_client_read_ear(const struct device* dev);
+// }
+
+// static FATFS mnt_fat_fs;
+// static struct fs_mount_t mnt_mp = {
+//     .type = FS_FATFS,
+//     .mnt_point = "/mnt",
+//     .fs_data = &mnt_fat_fs,
+// };
+
+// static FATFS run_fat_fs;
+// static struct fs_mount_t run_mp = {
+//     .type = FS_FATFS,
+//     .mnt_point = "/run",
+//     .fs_data = &run_fat_fs,
+// };
+
+void fs_params_init()
+{
+#if defined(CONFIG_FILE_SYSTEM_LITTLEFS)
+#define PARTITION_NODE_RO_A DT_NODELABEL(ro_lfs_a)
+// #define PARTITION_NODE_RO_B DT_NODELABEL(ro_lfs_b)
+    // const struct device* const flash_dev = DEVICE_DT_GET(DT_NODELABEL(qspi1));
+
+    // uint8_t ear = flash_ls_client_read_ear(flash_dev);
+    // if (ear == 0x0)
+    // {
+        // LOG_INF("Selecting RO_A partition (EAR=0x%02X)", ear);
+        FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RO_A);
+        mp_ro_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RO_A);
+    // }
+    // else
+    // {
+    //     LOG_INF("Selecting RO_B partition (EAR=0x%02X)", ear);
+    //     FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RO_B);
+    //     fs_params.mp_ro_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RO_B);
+    // }
+
+#define PARTITION_NODE_RW DT_NODELABEL(rw_lfs)
+    FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RW);
+    mp_rw_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RW);
+#endif
+
+}
+
+#define OVERLAY_MOUNT_NAME "/overlay"
+static struct overlay_mount_data overlay_data;
+struct fs_mount_t mp_overlay = {
+    .type = FS_OVERLAYFS,
+    .mnt_point = OVERLAY_MOUNT_NAME,
+    .fs_data = &overlay_data,
+};
+
+int overlayfs_init()
+{
+    int ret = 0;
+    struct overlay_mount_data* fs_data =  (struct overlay_mount_data*)mp_overlay.fs_data;
+    fs_data->ro_mnt = mp_ro_lfs;
+    fs_data->rw_mnt = mp_rw_lfs;
+
+    ret = fs_mount(&mp_overlay);
+    if (ret) {
+        while(1);
+        printf("Overlay FS mount failed, exit.\n");
+    }
+
+    return ret;
+}
+
+/*** end of test thread ***/
 static int filesystem_init()
 {
-#ifdef CONFIG_BOARD_QEMU_RISCV32_QEMU_VIRT_RISCV32
-    ramdisk_mount(NULL);
-    stub_file_init();
-#endif
-
-#ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
-    fs_params_init();
-    storage_fs_init();
-#endif
-
     int ret = 0;
+
+// #ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
+    fs_params_init();
+    // ret = fs_mount(&mnt_mp);
+    // if (ret) {
+    //     while(1);
+    // }
+    // ret = fs_mount(&run_mp);
+    // if (ret) {
+    //     while(1);
+    // }
+    // ret = storage_fs_init();
+#if defined(CONFIG_FILE_SYSTEM_LITTLEFS)
+    ret = fs_mount(mp_ro_lfs);
+    if (ret) {
+        while(1);
+        goto err;
+    }
+    ret = fs_mount(mp_rw_lfs);
+    if (ret) {
+        while(1);
+        goto err;
+    }
+#endif
     ret = fs_mount(&sd2mp);
     if (ret) {
         while(1);
     }
+    ret = overlayfs_init();
+    if (ret) {
+        while(1);
+        goto err;
+    }
+// #endif
+
+err:
     return ret;
 }
 
-// static int filesystem_init_rslt = filesystem_init();
-
+static int filesystem_init_rslt = filesystem_init();
+// #endif
 
 /*
  * Main entry point
@@ -373,7 +444,6 @@ int main(void)
     // k_sem_take(&net_config_init_ready_sem, K_SECONDS(20));
     // k_sleep(K_SECONDS(5));
 
-    filesystem_init();
     //only use once at the first time to sue filesysem, or you need to add new jsonfile or path.
     config_fs_init();
 

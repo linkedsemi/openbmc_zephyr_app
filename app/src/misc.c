@@ -111,8 +111,9 @@ int getrlimit (int resource, struct rlimit *rlp)
 }
 
 // Fake link handling by dummy functions:
-// int _link(const char* oldpath, const char* newpath) {
-//     //  has no link -> always return an error!
-//     errno = ENOSYS;
-//     return -1;
-// }
+int _link(const char* oldpath, const char* newpath) {
+    //  has no link -> always return an error!
+    __ASSERT(0, "_link() should never be called");
+    errno = ENOSYS;
+    return -1;
+}

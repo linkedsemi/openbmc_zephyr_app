@@ -1128,8 +1128,8 @@ int power_control_init()
 
 #if defined(CONFIG_OPENBMC_ENTITY_MANAGER) && defined(ENABLE_OPENBMC_ENTITY_MANAGER)
 // entity-manager
-MODULE_DEFINE_CHAN_OBSERVER(entity_manager);
-MODULE_DEFINE_CHAN_OBSERVER_MATCH(entity_manager);
+// MODULE_DEFINE_CHAN_OBSERVER(entity_manager);
+// MODULE_DEFINE_CHAN_OBSERVER_MATCH(entity_manager);
 extern int entity_main();
 K_SEM_DEFINE(entity_manager_ready_sem, 0, 1);
 

@@ -14,3 +14,34 @@
 &psram {
     status = "okay";
 };
+
+/ {
+    fstab {
+        compatible = "zephyr,fstab";
+
+        ro_lfs_a: ro_lfs_a{
+            compatible = "zephyr,fstab,littlefs";
+            mount-point = "/ro";
+            partition = <&a_rofs_partition>;
+            no-format;
+            read-only;
+            read-size = <32>;
+            prog-size = <32>;
+            cache-size = <64>;
+            lookahead-size = <256>;
+            block-cycles = <512>;
+        };
+        rw_lfs: rw_lfs{
+            compatible = "zephyr,fstab,littlefs";
+            mount-point = "/rw";
+            partition = <&rwfs_partition>;
+            // automount;
+            // no-format;
+            read-size = <32>;
+            prog-size = <32>;
+            cache-size = <64>;
+            lookahead-size = <256>;
+            block-cycles = <512>;
+        };
+    };
+};
