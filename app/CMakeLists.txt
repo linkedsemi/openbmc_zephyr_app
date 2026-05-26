@@ -18,6 +18,7 @@ target_sources(app PRIVATE
   src/dbroker.c
   src/socketpool.c
   src/config_fs.c
+  src/busctl_shell.c
 )
 
 # Handle Unix socket compatibility

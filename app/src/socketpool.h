@@ -5,6 +5,10 @@
 
 #include <zephyr/kernel.h>
 
+/* Forward declaration */
+struct Broker;
+typedef struct Broker Broker;
+
 /**
  * @brief Initialize the socketpool
  * 
@@ -46,5 +50,22 @@ void socketpool_get_stats(int *total, int *available);
  * @return 0 on success, negative error code on failure
  */
 int socketpool_add_peer_to_broker(Broker *broker, int broker_fd);
+
+/**
+ * @brief Check if a fd is managed by the socketpool
+ * @param fd The file descriptor to check
+ * @return true if the fd is managed by the pool, false otherwise
+ */
+bool socketpool_is_pool_fd(int fd);
+
+/**
+ * @brief Wake up the broker's poll loop
+ * @param broker The broker instance
+ * 
+ * Write to the broker's terminate pipe to wake up poll when new data
+ * has been written to a peer fd. Zephyr's poll may not wake
+ * up for socketpair data arriving while poll is already blocking.
+ */
+void socketpool_wake_broker(Broker *broker);
 
 #endif /* __SOCKETPOOL_H__ */

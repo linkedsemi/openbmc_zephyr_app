@@ -282,3 +282,11 @@ int socketpool_add_peer_to_broker(Broker *broker, int broker_fd)
     /* Peer is now owned by the broker, don't free it */
     return 0;
 }
+
+void socketpool_wake_broker(Broker *broker)
+{
+    if (broker) {
+        char byte = 1;
+        write(broker->dispatcher.terminate_pipe[1], &byte, 1);
+    }
+}
