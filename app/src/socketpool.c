@@ -40,86 +40,72 @@ struct socketpool {
     struct k_mutex lock;
     struct socketpool_entry entries[SOCKETPOOL_MAX_PAIRS];
     int total_pairs;
-    int available_pairs;
 };
 
 static struct socketpool socketpool = {
     .lock = Z_MUTEX_INITIALIZER(socketpool.lock),
     .total_pairs = 0,
-    .available_pairs = 0,
 };
 
 /*
- * Initialize socketpool
+ * Create a single socketpair and configure it
  */
-int socketpool_init(void)
+static int socketpool_create_pair(struct socketpool_entry *entry)
 {
+    int sv[2];
     int r;
-    int i;
 
-    LOG_INF("[Socketpool] Initializing socketpool with %d pairs...", SOCKETPOOL_MAX_PAIRS);
-
-    k_mutex_lock(&socketpool.lock, K_FOREVER);
-
-    for (i = 0; i < SOCKETPOOL_MAX_PAIRS; i++) {
-        struct socketpool_entry *entry = &socketpool.entries[i];
-
-        entry->in_use = false;
-        k_sem_init(&entry->sem, 1, 1);  /* Binary semaphore for each entry */
-
-        /* Create socketpair */
-        int sv[2];
-        r = socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
-        if (r < 0) {
-            LOG_ERR("[Socketpool] Failed to create socketpair %d: %d (errno: %d)",
-                    i, r, errno);
-            k_mutex_unlock(&socketpool.lock);
-            return -errno;
-        }
-
-        /* Store the fds */
-        entry->broker_fd = sv[0];
-        entry->client_fd = sv[1];
-
-        /* Set both ends to non-blocking */
-        int flags;
-        flags = fcntl(entry->broker_fd, F_GETFL, 0);
-        if (flags < 0) {
-            LOG_ERR("[Socketpool] Failed to get flags for broker_fd %d: %d (errno: %d)",
-                    entry->broker_fd, r, errno);
-        } else {
-            fcntl(entry->broker_fd, F_SETFL, flags | O_NONBLOCK);
-        }
-
-        flags = fcntl(entry->client_fd, F_GETFL, 0);
-        if (flags < 0) {
-            LOG_ERR("[Socketpool] Failed to get flags for client_fd %d: %d (errno: %d)",
-                    entry->client_fd, r, errno);
-        } else {
-            fcntl(entry->client_fd, F_SETFL, flags | O_NONBLOCK);
-        }
-
-        /* Set socket buffer sizes */
-        /* Note: SO_RCVBUF and SO_SNDBUF are not supported on AF_UNIX sockets in Zephyr */
-        /* The kernel manages buffer sizes internally */
-
-        // LOG_DBG("[Socketpool] Created socketpair %d: broker_fd=%d, client_fd=%d",
-        //         i, entry->broker_fd, entry->client_fd);
-
-        socketpool.total_pairs++;
-        socketpool.available_pairs++;
+    r = socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
+    if (r < 0) {
+        LOG_ERR("[Socketpool] Failed to create socketpair: %d (errno: %d)", r, errno);
+        return -errno;
     }
 
-    k_mutex_unlock(&socketpool.lock);
+    entry->broker_fd = sv[0];
+    entry->client_fd = sv[1];
 
-    LOG_INF("[Socketpool] Socketpool initialized: %d/%d pairs available",
-            socketpool.available_pairs, socketpool.total_pairs);
+    /* Set both ends to non-blocking */
+    int flags;
+    flags = fcntl(entry->broker_fd, F_GETFL, 0);
+    if (flags >= 0)
+        fcntl(entry->broker_fd, F_SETFL, flags | O_NONBLOCK);
+
+    flags = fcntl(entry->client_fd, F_GETFL, 0);
+    if (flags >= 0)
+        fcntl(entry->client_fd, F_SETFL, flags | O_NONBLOCK);
+
+    socketpool.total_pairs++;
 
     return 0;
 }
 
 /*
- * Allocate a socketpair from the pool
+ * Initialize socketpool - lazy allocation, no socketpairs created yet.
+ * Socketpairs are created on-demand in socketpool_allocate().
+ */
+int socketpool_init(void)
+{
+    int i;
+
+    LOG_INF("[Socketpool] Initializing socketpool pool size=%d (lazy allocation)...",
+            SOCKETPOOL_MAX_PAIRS);
+
+    for (i = 0; i < SOCKETPOOL_MAX_PAIRS; i++) {
+        struct socketpool_entry *entry = &socketpool.entries[i];
+        entry->broker_fd = -1;
+        entry->client_fd = -1;
+        entry->in_use = false;
+        k_sem_init(&entry->sem, 1, 1);
+    }
+
+    LOG_INF("[Socketpool] Socketpool initialized: 0/%d pairs created (on-demand)",
+            SOCKETPOOL_MAX_PAIRS);
+
+    return 0;
+}
+
+/*
+ * Allocate a socketpair from the pool (lazy creation)
  * Returns: 0 on success, negative errno on failure
  * On success, broker_fd and client_fd are set to the allocated fds
  */
@@ -127,51 +113,49 @@ int socketpool_allocate(int *broker_fd, int *client_fd)
 {
     int i;
     struct socketpool_entry *entry = NULL;
+    int r;
 
     if (!broker_fd || !client_fd) {
         LOG_ERR("[Socketpool] Invalid parameters");
         return -EINVAL;
     }
 
-    /* Find an available entry */
     k_mutex_lock(&socketpool.lock, K_FOREVER);
 
-    if (socketpool.available_pairs == 0) {
-        LOG_ERR("[Socketpool] No available socketpairs in pool");
-        k_mutex_unlock(&socketpool.lock);
-        return -EAGAIN;
-    }
-
-    for (i = 0; i < socketpool.total_pairs; i++) {
-        if (!socketpool.entries[i].in_use) {
+    for (i = 0; i < SOCKETPOOL_MAX_PAIRS; i++) {
+        if (!socketpool.entries[i].in_use && socketpool.entries[i].broker_fd == -1) {
             entry = &socketpool.entries[i];
+            r = socketpool_create_pair(entry);
+            if (r < 0) {
+                k_mutex_unlock(&socketpool.lock);
+                return r;
+            }
             break;
         }
     }
 
     if (!entry) {
-        LOG_ERR("[Socketpool] Failed to find available socketpair");
+        LOG_ERR("[Socketpool] No available socketpairs in pool (max=%d, created=%d)",
+                SOCKETPOOL_MAX_PAIRS, socketpool.total_pairs);
         k_mutex_unlock(&socketpool.lock);
         return -EAGAIN;
     }
 
-    /* Mark as in use */
     entry->in_use = true;
-    socketpool.available_pairs--;
 
     *broker_fd = entry->broker_fd;
     *client_fd = entry->client_fd;
 
     k_mutex_unlock(&socketpool.lock);
 
-    LOG_DBG("[Socketpool] Allocated socketpair: broker_fd=%d, client_fd=%d (%d/%d available)",
-            *broker_fd, *client_fd, socketpool.available_pairs, socketpool.total_pairs);
+    LOG_DBG("[Socketpool] Allocated socketpair: broker_fd=%d, client_fd=%d (%d/%d created)",
+            *broker_fd, *client_fd, socketpool.total_pairs, SOCKETPOOL_MAX_PAIRS);
 
     return 0;
 }
 
 /*
- * Free a socketpair back to the pool
+ * Free a socketpair back to the pool (closes fds, releases pipe buffer memory)
  * Returns: 0 on success, negative errno on failure
  */
 int socketpool_free(int broker_fd, int client_fd)
@@ -181,7 +165,6 @@ int socketpool_free(int broker_fd, int client_fd)
 
     k_mutex_lock(&socketpool.lock, K_FOREVER);
 
-    /* Find the entry */
     for (i = 0; i < socketpool.total_pairs; i++) {
         if (socketpool.entries[i].broker_fd == broker_fd &&
             socketpool.entries[i].client_fd == client_fd) {
@@ -204,32 +187,23 @@ int socketpool_free(int broker_fd, int client_fd)
         return 0;
     }
 
-    /* Mark as available - DO NOT reset FDs to -1!
-     * The FDs remain valid and will be reused on next allocation.
-     * This prevents pool capacity from shrinking.
-     */
+    /* Close fds to release kernel pipe buffers back to heap */
+    if (entry->broker_fd >= 0)
+        close(entry->broker_fd);
+    if (entry->client_fd >= 0 && entry->client_fd != entry->broker_fd)
+        close(entry->client_fd);
+
+    entry->broker_fd = -1;
+    entry->client_fd = -1;
     entry->in_use = false;
-    socketpool.available_pairs++;
+    socketpool.total_pairs--;
 
     k_mutex_unlock(&socketpool.lock);
 
-    LOG_DBG("[Socketpool] Freed socketpair: broker_fd=%d, client_fd=%d (%d/%d available)",
-            broker_fd, client_fd, socketpool.available_pairs, socketpool.total_pairs);
+    LOG_DBG("[Socketpool] Freed socketpair: closed fds (%d/%d created)",
+            socketpool.total_pairs, SOCKETPOOL_MAX_PAIRS);
 
     return 0;
-}
-
-/*
- * Get socketpool statistics
- */
-void socketpool_get_stats(int *total, int *available)
-{
-    if (total) {
-        *total = socketpool.total_pairs;
-    }
-    if (available) {
-        *available = socketpool.available_pairs;
-    }
 }
 
 /*
