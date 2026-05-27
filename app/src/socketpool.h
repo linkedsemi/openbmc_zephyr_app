@@ -35,14 +35,6 @@ int socketpool_allocate(int *broker_fd, int *client_fd);
 int socketpool_free(int broker_fd, int client_fd);
 
 /**
- * @brief Get socketpool statistics
- * 
- * @param total Pointer to store total number of socketpairs
- * @param available Pointer to store available number of socketpairs
- */
-void socketpool_get_stats(int *total, int *available);
-
-/**
  * @brief Add a peer to the broker using a socketpair from the pool
  * @details This function is called when a client requests a connection
  * @param broker Pointer to the broker instance
