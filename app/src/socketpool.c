@@ -87,7 +87,7 @@ int socketpool_init(void)
 {
     int i;
 
-    LOG_INF("[Socketpool] Initializing socketpool pool size=%d (lazy allocation)...",
+    LOG_DBG("[Socketpool] Initializing socketpool pool size=%d (lazy allocation)...",
             SOCKETPOOL_MAX_PAIRS);
 
     for (i = 0; i < SOCKETPOOL_MAX_PAIRS; i++) {
@@ -98,7 +98,7 @@ int socketpool_init(void)
         k_sem_init(&entry->sem, 1, 1);
     }
 
-    LOG_INF("[Socketpool] Socketpool initialized: 0/%d pairs created (on-demand)",
+    LOG_DBG("[Socketpool] Socketpool initialized: 0/%d pairs created (on-demand)",
             SOCKETPOOL_MAX_PAIRS);
 
     return 0;
@@ -148,8 +148,8 @@ int socketpool_allocate(int *broker_fd, int *client_fd)
 
     k_mutex_unlock(&socketpool.lock);
 
-    LOG_DBG("[Socketpool] Allocated socketpair: broker_fd=%d, client_fd=%d (%d/%d created)",
-            *broker_fd, *client_fd, socketpool.total_pairs, SOCKETPOOL_MAX_PAIRS);
+    printk("[Socketpool] Allocated socketpair: entry[%d], broker_fd=%d, client_fd=%d (%d/%d alive)",
+            i, *broker_fd, *client_fd, socketpool.total_pairs, SOCKETPOOL_MAX_PAIRS);
 
     return 0;
 }
@@ -200,8 +200,8 @@ int socketpool_free(int broker_fd, int client_fd)
 
     k_mutex_unlock(&socketpool.lock);
 
-    LOG_DBG("[Socketpool] Freed socketpair: closed fds (%d/%d created)",
-            socketpool.total_pairs, SOCKETPOOL_MAX_PAIRS);
+    printk("[Socketpool] Freed socketpair: closed fds [%d, %d] of entry[%d] (%d/%d alive)",
+            broker_fd, client_fd, i, socketpool.total_pairs, SOCKETPOOL_MAX_PAIRS);
 
     return 0;
 }
@@ -250,7 +250,7 @@ int socketpool_add_peer_to_broker(Broker *broker, int broker_fd)
         return r;
     }
 
-    LOG_INF("[Socketpool] Peer spawned successfully: fd=%d, connection socket_file user_mask=0x%x",
+    LOG_DBG("[Socketpool] Peer spawned successfully: fd=%d, connection socket_file user_mask=0x%x",
             broker_fd, peer->connection.socket_file.user_mask);
 
     /* Peer is now owned by the broker, don't free it */
