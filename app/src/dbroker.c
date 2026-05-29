@@ -671,26 +671,34 @@ int disconnect_from_dbroker(sd_bus *bus) {
     // 1. Flush pending messages
     sd_bus_flush(bus);
     
-    // 2. Close IO FDs (marks as closed, skips actual close for socketpool)
+    // 2. Mark bus as closed (sd_bus_close does NOT close fds under socketpool)
     sd_bus_close(bus);
     
-    // 3. Wait for broker to process EOF and free peer
 #ifdef CONFIG_DBUS_BROKER_SOCKETPOOL
-    k_msleep(100);  // Shorter delay for socketpair
-#else
-    k_msleep(200);
-#endif
+    // 3. Close client_fd FIRST to signal EOF to broker immediately
+    //    (socketpair other end gets POLLHUP, triggering peer cleanup)
+    int saved_client_fd = wrapper->client_fd;
+    int saved_broker_fd = wrapper->broker_fd;
     
-    // 4. Recycle socketpool resources
-#ifdef CONFIG_DBUS_BROKER_SOCKETPOOL
-    if (wrapper->broker_fd >= 0 && wrapper->client_fd >= 0) {
-        int saved_broker_fd = wrapper->broker_fd;
-        int saved_client_fd = wrapper->client_fd;
-        
-        socketpool_free(wrapper->broker_fd, wrapper->client_fd);
-        wrapper->broker_fd = -1;
+    if (saved_client_fd >= 0) {
+        close(saved_client_fd);
         wrapper->client_fd = -1;
     }
+    
+    // 4. Wait for broker to process EOF and free the old peer
+    k_msleep(100);
+    
+    // 5. Recycle socketpool resources (close broker_fd, mark entry free)
+    if (saved_broker_fd >= 0) {
+        socketpool_free(saved_broker_fd, saved_client_fd);
+    }
+    wrapper->broker_fd = -1;
+#else
+    // 3. Wait for broker to process EOF
+    k_msleep(200);
+    
+    // 4. No socketpool, fds already closed by sd_bus_close
+    (void)0;
 #endif
     
     // 5. Unref the bus object (frees memory)
