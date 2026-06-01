@@ -561,10 +561,10 @@ int connect_to_dbroker(sd_bus **bus)
         return r;
     }
 
-    r = sd_bus_set_default_system(internal_bus);
-    if (r < 0 && r != -EEXIST) {
-        LOG_WRN("[DBroker API] Failed to set default system bus, error: %d", r);
-    }
+    // r = sd_bus_set_default_system(internal_bus);
+    // if (r < 0 && r != -EEXIST) {
+    //     LOG_WRN("[DBroker API] Failed to set default system bus, error: %d", r);
+    // }
 
     wrapper->bus = internal_bus;
 

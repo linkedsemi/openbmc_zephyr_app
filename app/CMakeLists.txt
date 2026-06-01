@@ -42,6 +42,7 @@ endif()
 zephyr_library_link_libraries(
 	dbus-broker
 	basu
+  phosphor-objmgr
 )
 
 # zephyr_library_link_libraries(sd-bus)

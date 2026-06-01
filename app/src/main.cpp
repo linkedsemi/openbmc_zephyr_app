@@ -116,7 +116,7 @@ THREAD_DEFINE(dbus_broker, dbus_broker_init, dbus_broker_ready_sem);
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_OBJMGR
-THREAD_DEFINE(objmgr, objmgr_init, objmgr_ready_sem, "zbus_broker");
+THREAD_DEFINE(objmgr, objmgr_init, objmgr_ready_sem, "dbus_broker");
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_LOGGING
@@ -461,6 +461,9 @@ int main(void)
     print_thread_status();
 
     LOG_INF("BMC application startup completed\n");
+    // extern int objmgr_test_init(void);
+    // objmgr_test_init();
+
     extern int ipmid_test(void);
 
     ipmid_test();

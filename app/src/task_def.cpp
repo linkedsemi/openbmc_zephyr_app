@@ -524,8 +524,8 @@ int bmcweb_init()
 
 #if defined(CONFIG_OPENBMC_PHOSPHOR_OBJMGR) && defined(ENABLE_OPENBMC_PHOSPHOR_OBJMGR)
 // phosphor-objmgr
-MODULE_DEFINE_CHAN_OBSERVER(phosphor_objmgr);
-MODULE_DEFINE_CHAN_OBSERVER_MATCH(phosphor_objmgr);
+// MODULE_DEFINE_CHAN_OBSERVER(phosphor_objmgr);
+// MODULE_DEFINE_CHAN_OBSERVER_MATCH(phosphor_objmgr);
 K_SEM_DEFINE(objmgr_ready_sem, 0, 1);
 
 int objmgr_main();
