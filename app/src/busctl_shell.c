@@ -46,10 +46,10 @@ static int cmd_busctl(const struct shell *sh, size_t argc, char **argv)
 	char **argv_copy;
 
 	/* Disable 'monitor' command (infinite loop) */
-	if (argc > 1 && strcmp(argv[1], "monitor") == 0) {
-		shell_error(sh, "monitor: not supported in shell mode");
-		return -EINVAL;
-	}
+	// if (argc > 1 && strcmp(argv[1], "monitor") == 0) {
+	// 	shell_error(sh, "monitor: not supported in shell mode");
+	// 	return -EINVAL;
+	// }
 
 	/* Allocate and copy arguments for the background thread */
 	args = malloc(sizeof(*args));

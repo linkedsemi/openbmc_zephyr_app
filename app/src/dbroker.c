@@ -371,19 +371,6 @@ static void *broker_handler(void *arg)
  */
 static int dbus_broker_main(void)
 {
-    int r;
-    // LOG_INF("[DBus Broker] Initializing D-Bus Broker subsystem...");
-
-#ifdef CONFIG_DBUS_BROKER_SOCKETPOOL
-    /* Initialize socketpool */
-    r = socketpool_init();
-    if (r < 0) {
-        LOG_ERR("[DBus Broker] Failed to initialize socketpool: %d", r);
-        return r;
-    }
-    LOG_INF("[DBus Broker] Socketpool initialized successfully");
-#endif
-    
     /* Create broker thread using pthread-based creation */
     CREATE_TASK_WITH_PTHREAD(&broker_thread, broker, DBUS_BROKER_THREAD_STACK_SIZE);
     

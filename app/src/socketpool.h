@@ -10,13 +10,6 @@ struct Broker;
 typedef struct Broker Broker;
 
 /**
- * @brief Initialize the socketpool
- * 
- * @return 0 on success, negative errno on failure
- */
-int socketpool_init(void);
-
-/**
  * @brief Allocate a socketpair from the pool
  * 
  * @param broker_fd Pointer to store the broker's fd
