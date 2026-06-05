@@ -88,7 +88,7 @@ manifest:
       remote: linkedsemi
       path: openbmc/phosphor-logging
     - name: phosphor-dbus-interfaces
-      revision: e0e76dc4e130f306d95ca5617f2f37c76eccf122
+      revision: e0991f8f27f490dcbde9bccfb381ede937123691
       remote: linkedsemi
       path: openbmc/phosphor-dbus-interfaces
     - name: phosphor-objmgr
