@@ -91,7 +91,7 @@ int socketpool_allocate(int *broker_fd, int *client_fd)
 
     k_mutex_unlock(&socketpool.lock);
 
-    printk("[Socketpool] Allocated socketpair: broker_fd=%d, client_fd=%d",
+    printk("[Socketpool] Allocated socketpair: broker_fd=%d, client_fd=%d\n",
             *broker_fd, *client_fd);
 
     return 0;

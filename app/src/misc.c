@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <unistd.h>
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
 
 // void OPENSSL_cleanse(void *ptr, size_t len)
 // {
@@ -116,4 +117,22 @@ int _link(const char* oldpath, const char* newpath) {
     __ASSERT(0, "_link() should never be called");
     errno = ENOSYS;
     return -1;
+}
+
+/* Stub for espi_bmc_ls callback - provides bmc_espi_rx_callback symbol
+ * required by espi_ls.c for BMC-side ESPI.
+ */
+void bmc_espi_rx_callback(const struct device *dev, void *msg)
+{
+    /* no-op: BMC virtual wire handling not needed for KCS-only use */
+}
+
+/* Stub for host_kcs_rx_callback - peer callback for BMC KCS device.
+ * On the BMC side, the host-side KCS driver is not compiled, but the
+ * KCS LS device still references this as a peer callback via
+ * HOST_BMC_MSG_EXCH_INIT. This function is never called on the BMC.
+ */
+void host_kcs_rx_callback(const struct device *dev, void *msg)
+{
+    /* no-op */
 }

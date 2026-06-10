@@ -40,6 +40,12 @@ extern struct k_sem dbus_broker_ready_sem;
 int ipmid_init();
 extern struct k_sem host_ipmid_ready_sem;
 
+// kcsbridge
+#define CONFIG_THREAD_PRI_KCS 10
+#define KCS_THREAD_STACK_SIZE (16 * 1024)
+int kcsbridge_init();
+extern struct k_sem kcs_bridge_ready_sem;
+
 // busctl
 #define CONFIG_THREAD_PRI_BUSCTL 10
 #define BUSCTL_THREAD_STACK_SIZE (32 * 1024)

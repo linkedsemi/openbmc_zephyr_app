@@ -253,7 +253,7 @@ THREAD_DEFINE(callback_manager, callback_manager_init, callback_manager_ready_se
 #endif
 
 #ifdef ENABLE_OPENBMC_KCSBRIDGE
-THREAD_DEFINE(kcs_bridge, kcs_bridge_init, kcs_bridge_ready_sem, "zbus_broker", "objmgr", "ipmid");
+THREAD_DEFINE(kcs_bridge, kcs_bridge_init, kcs_bridge_ready_sem, "dbus_broker", "objmgr", "ipmid");
 #endif
 
 #ifdef ENABLE_OPENBMC_CERTIFICATE_MANAGER

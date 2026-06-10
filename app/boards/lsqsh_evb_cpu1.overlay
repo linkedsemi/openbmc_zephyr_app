@@ -15,6 +15,38 @@
     status = "okay";
 };
 
+&espi1 {
+    status = "okay";
+    espi1_kcs0: espi1_kcs_ca2 {
+        compatible = "linkedsemi,ls-kcs";
+        kcs-env-addr = <0x40045d00>;
+        port = <0xca2 0xca3>;
+        status = "okay";
+    };
+};
+
+// host_kcs_container: host_bmc_container_kcs@0 {
+// 		compatible = "linkedsemi,host-bmc-container";
+// 		reg = < 0x0 0x10 >;
+// 		#address-cells = < 0x1 >;
+// 		#size-cells = < 0x1 >;
+// 		status = "okay";
+// 		espi1_host_kcs_ca2: espi1_host_kcs_ca2@0 {
+// 			compatible = "linkedsemi,ls-host-kcs";
+// 			reg = < 0x0 0x10 >;
+// 			port = < 0xca2 0xca3 >;
+// 			kcs-env-addr = < 0x40045d00 >;
+// 			espi_lpc = < &espi1 >;
+// 			mbox = < &mbox_consumer_kcs1 >;
+// 			status = "okay";
+// 		};
+// 	};
+
+&ipmi_kcs {
+    kcs_chan = <&espi1_kcs0>;
+    status = "okay";
+};
+
 / {
     fstab {
         compatible = "zephyr,fstab";

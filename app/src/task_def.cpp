@@ -123,7 +123,7 @@ int ipmid_init()
 
 #if defined(CONFIG_BUSCTL) && defined(ENABLE_BUSCTL)
 // busctl
-MODULE_DEFINE_CHAN_OBSERVER(busctl);
+// MODULE_DEFINE_CHAN_OBSERVER(busctl);
 extern int busctl_main();
 K_SEM_DEFINE(busctl_ready_sem, 0, 1);
 
@@ -1239,18 +1239,19 @@ int phosphor_hostlogger_init()
 
 #if defined(CONFIG_OPENBMC_KCSBRIDGE) && defined(ENABLE_OPENBMC_KCSBRIDGE)
 // kcs bridge
-MODULE_DEFINE_CHAN_OBSERVER(kcs_bridge);
-extern int kcs_main(int argc, char* argv[]);
+// MODULE_DEFINE_CHAN_OBSERVER(kcs_bridge);
+extern "C" int kcsbridge_main();
 K_SEM_DEFINE(kcs_bridge_ready_sem, 0, 1);
 
 void* kcs_bridge_thread_handler(void *arg)
 {
-    char* argv[] = {
-        "kcsbridged",
-        "--channel=ipmi-kcs"
-    };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-    kcs_main(argc, argv);
+    // char* argv[] = {
+    //     "kcsbridged",
+    //     "--channel=ipmi-kcs"
+    // };
+    // int argc = sizeof(argv) / sizeof(argv[0]);
+    // kcs_main(argc, argv);
+    kcsbridge_main();
     return NULL;
 }
 int kcs_bridge_init()
