@@ -1156,7 +1156,7 @@ int entity_manager_init()
 
 #if defined(CONFIG_OPENBMC_ENTITY_MANAGER) && defined(ENABLE_OPENBMC_FRU_DEVICE)
 // phosphor-logging
-MODULE_DEFINE_CHAN_OBSERVER(fru_device);
+// MODULE_DEFINE_CHAN_OBSERVER(fru_device);
 extern int fru_main();
 K_SEM_DEFINE(fru_device_ready_sem, 0, 1);
 

@@ -15,6 +15,55 @@
     status = "okay";
 };
 
+&i2c1 {
+    status = "okay";
+    label = "i2c-1";
+};
+&i2c2 {
+    status = "okay";
+    label = "i2c-2";
+};
+&i2c3 {
+    status = "okay";
+    label = "i2c-3";
+};
+&i2c4 {
+    status = "okay";
+    label = "i2c-4";
+};
+&i2c5 {
+    status = "okay";
+    label = "i2c-5";
+};
+&i2c6 {
+    status = "okay";
+    label = "i2c-6";
+};
+&i2c7 {
+    status = "okay";
+    label = "i2c-7";
+};
+&i2c8 {
+    status = "okay";
+    label = "i2c-8";
+};
+&i2c9 {
+    status = "okay";
+    label = "i2c-9";
+};
+&i2c10 {
+    status = "okay";
+    label = "i2c-10";
+};
+&i2c11 {
+    status = "okay";
+    label = "i2c-11";
+};
+&i2c14 {
+    status = "okay";
+    label = "i2c-14";
+};
+
 &espi1 {
     status = "okay";
     espi1_kcs0: espi1_kcs_ca2 {

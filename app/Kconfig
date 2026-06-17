@@ -85,4 +85,19 @@ config OPENBMC_ZEPHYR
 	help
 	  Global flag to indicate this is OpenBMC build.
 
+config FS_ROOT_RO
+    string
+    prompt "Root filesystem read-only path"
+    default "/ro"
+
+config FS_ROOT_RW
+    string
+    prompt "Root filesystem read-write path"
+    default "/rw"
+
+config FS_ROOT_OVERLAY
+    string
+    prompt "Root filesystem overlay path"
+    default "/overlay"
+
 source "Kconfig.zephyr"
