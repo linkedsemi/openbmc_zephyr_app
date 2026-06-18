@@ -228,7 +228,7 @@ static const char channel_config_json[] =
     "        }\n"
     "    },\n"
     "    \"15\": {\n"
-    "        \"name\": \"kcs0\",\n"
+    "        \"name\": \"ipmi_kcs3\",\n"
     "        \"is_valid\": true,\n"
     "        \"active_sessions\": 0,\n"
     "        \"channel_info\": {\n"
