@@ -304,7 +304,7 @@ int start_thread_with_dependencies(const char *thread_name)
         // Wait for thread to signal readiness
         if (desc->ready_sem) {
             int sem_ret =
-                k_sem_take(desc->ready_sem, K_SECONDS(100)); // 100 seconds timeout
+                k_sem_take(desc->ready_sem, K_SECONDS(10)); // 100 seconds timeout
             if (sem_ret == 0) {
                 desc->state = THREAD_STATE_READY;
                 LOG_INF("Thread '%s' started successfully", thread_name);
