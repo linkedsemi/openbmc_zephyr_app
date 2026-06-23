@@ -2,6 +2,34 @@
     zephyr,sram = &sram;
 };
 
+/*
+ * SHMEM must be moved above the sram (data RAM) region to avoid overlap
+ * with noinit/BSS sections. The original SHMEM at 0x100be000 collides
+ * with growing noinit. Move it to 0x10140000 (right after sram ends).
+ */
+/delete-node/ &driver_share_memory;
+/ {
+    soc {
+        driver_share_memory: memory@0x1013c000 {
+            compatible = "zephyr,memory-region", "mmio-sram";
+            reg = <0x1013c000 0x1000>;
+            zephyr,memory-region = "SHMEM";
+        };
+    };
+};
+
+/* MBOX region must also move to avoid potential overlap */
+/delete-node/ &mbox_memory;
+/ {
+    soc {
+        mbox_memory: memory@0x1013d000 {
+            compatible = "zephyr,memory-region", "mmio-sram";
+            reg = <0x1013d000 DT_SIZE_K(4)>;
+            zephyr,memory-region = "MBOX";
+        };
+    };
+};
+
 &eth1 {
     status = "okay";
 };
