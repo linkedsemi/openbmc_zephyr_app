@@ -348,11 +348,10 @@ void fs_params_init()
 
 }
 
-#define OVERLAY_MOUNT_NAME "/overlay"
 static struct overlay_mount_data overlay_data;
 struct fs_mount_t mp_overlay = {
     .type = FS_OVERLAYFS,
-    .mnt_point = OVERLAY_MOUNT_NAME,
+    .mnt_point = CONFIG_FS_ROOT_OVERLAY,
     .fs_data = &overlay_data,
 };
 
@@ -445,7 +444,7 @@ int main(void)
     // k_sleep(K_SECONDS(5));
 
     //only use once at the first time to sue filesysem, or you need to add new jsonfile or path.
-    config_fs_init();
+    // config_fs_init();
 
     LOG_INF("Starting BMC application with dependency management...\n");
 
