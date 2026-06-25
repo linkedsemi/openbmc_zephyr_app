@@ -90,9 +90,10 @@ static int cmd_busctl(const struct shell *sh, size_t argc, char **argv)
 	/* Start watchdog: auto-release lock if thread crashes or hangs.
 	 * The watchdog runs during the entire thread lifetime (not stopped
 	 * until after atomic_clear), so even crashes inside basu_busctl_entry,
-	 * cleanup, or free() are caught. 30s is generous enough for any
-	 * D-Bus operation including slow introspection replies. */
-	k_timer_start(&busctl_abort_timer, K_SECONDS(30), K_NO_WAIT);
+	 * cleanup, or free() are caught. 120s accounts for slow services
+	 * like EntityManager (large introspect XML) plus multiple unresponsive
+	 * services that each need ~10s before fast-fail kicks in. */
+	k_timer_start(&busctl_abort_timer, K_SECONDS(120), K_NO_WAIT);
 
 	/* Allocate and copy arguments for the background thread */
 	args = malloc(sizeof(*args));
