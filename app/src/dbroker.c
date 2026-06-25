@@ -348,17 +348,17 @@ retry:
         return r;
     }
 
-    r = sd_bus_set_fd(internal_bus, client_fd, client_fd);
+    r = sd_bus_set_bus_client(internal_bus, true);
     if (r < 0) {
-        LOG_ERR("[DBroker API] sd_bus_set_fd failed: %d", r);
+        LOG_ERR("[DBroker API] sd_bus_set_bus_client failed: %d", r);
         sd_bus_unref(internal_bus);
         close(client_fd);
         return r;
     }
 
-    r = sd_bus_set_bus_client(internal_bus, true);
+    r = sd_bus_set_fd(internal_bus, client_fd, client_fd);
     if (r < 0) {
-        LOG_ERR("[DBroker API] sd_bus_set_bus_client failed: %d", r);
+        LOG_ERR("[DBroker API] sd_bus_set_fd failed: %d", r);
         sd_bus_unref(internal_bus);
         close(client_fd);
         return r;
