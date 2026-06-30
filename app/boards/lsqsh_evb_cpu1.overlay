@@ -51,45 +51,174 @@
     status = "okay";
     label = "i2c-2";
 };
-&i2c3 {
-    status = "okay";
-    label = "i2c-3";
-};
-&i2c4 {
-    status = "okay";
-    label = "i2c-4";
-};
+// &i2c3 {
+//     status = "okay";
+//     label = "i2c-3";
+// };
+// &i2c4 {
+//     status = "okay";
+//     label = "i2c-4";
+// };
+
 &i2c5 {
     status = "okay";
     label = "i2c-5";
+    eeprom_5_1: eeprom@50 {
+        status = "okay";
+        compatible = "atmel,at24";
+        reg = <0x50>;
+        size = <4096>;
+        pagesize = <32>;
+        address-width = <16>;
+        timeout = <5>;
+        label = "eeprom_5_1";
+    };
 };
-&i2c6 {
-    status = "okay";
-    label = "i2c-6";
-};
-&i2c7 {
-    status = "okay";
-    label = "i2c-7";
-};
-&i2c8 {
-    status = "okay";
-    label = "i2c-8";
-};
-&i2c9 {
-    status = "okay";
-    label = "i2c-9";
-};
-&i2c10 {
-    status = "okay";
-    label = "i2c-10";
-};
-&i2c11 {
-    status = "okay";
-    label = "i2c-11";
-};
+// &i2c6 {
+//     status = "okay";
+//     label = "i2c-6";
+//     eeprom_6_1: eeprom@50 {
+//         status = "okay";
+//         compatible = "atmel,at24";
+//         reg = <0x50>;
+//         size = <4096>;
+//         pagesize = <32>;
+//         address-width = <16>;
+//         timeout = <5>;
+//         label = "eeprom_6_1";
+//     };
+// };
+// &i2c7 {
+//     status = "okay";
+//     label = "i2c-7";
+//     eeprom_7_1: eeprom@50 {
+//         status = "okay";
+//         compatible = "atmel,at24";
+//         reg = <0x50>;
+//         size = <4096>;
+//         pagesize = <32>;
+//         address-width = <16>;
+//         timeout = <5>;
+//         label = "eeprom_7_1";
+//     };
+// };
+// &i2c8 {
+//     status = "okay";
+//     label = "i2c-8";
+//     eeprom_8_1: eeprom@50 {
+//         status = "okay";
+//         compatible = "atmel,at24";
+//         reg = <0x50>;
+//         size = <4096>;
+//         pagesize = <32>;
+//         address-width = <16>;
+//         timeout = <5>;
+//         label = "eeprom_8_1";
+//     };
+// };
+// &i2c9 {
+//     status = "okay";
+//     label = "i2c-9";
+//     eeprom_9_1: eeprom@50 {
+//         status = "okay";
+//         compatible = "atmel,at24";
+//         reg = <0x50>;
+//         size = <4096>;
+//         pagesize = <32>;
+//         address-width = <16>;
+//         timeout = <5>;
+//         label = "eeprom_9_1";
+//     };
+// };
+// &i2c10 {
+//     status = "okay";
+//     label = "i2c-10";
+//     eeprom_10_1: eeprom@50 {
+//         status = "okay";
+//         compatible = "atmel,at24";
+//         reg = <0x50>;
+//         size = <4096>;
+//         pagesize = <32>;
+//         address-width = <16>;
+//         timeout = <5>;
+//         label = "eeprom_10_1";
+//     };
+// };
+// &i2c11 {
+//     status = "okay";
+//     label = "i2c-11";
+//     eeprom_11_1: eeprom@50 {
+//         status = "okay";
+//         compatible = "atmel,at24";
+//         reg = <0x50>;
+//         size = <4096>;
+//         pagesize = <32>;
+//         address-width = <16>;
+//         timeout = <5>;
+//         label = "eeprom_11_1";
+//     };
+// };
 &i2c14 {
     status = "okay";
     label = "i2c-14";
+    eeprom_14_1: eeprom@50 {
+        status = "okay";
+        compatible = "atmel,at24";
+        reg = <0x50>;
+        size = <4096>;
+        pagesize = <32>;
+        address-width = <16>;
+        timeout = <5>;
+        label = "eeprom_14_1";
+    };
+};
+
+&smbus1 {
+    status = "okay";
+};
+
+&smbus2 {
+    status = "okay";
+};
+
+// &smbus3 {
+//     status = "okay";
+// };
+// 
+// &smbus4 {
+//     status = "okay";
+// };
+
+&smbus5 {
+    status = "okay";
+};
+
+// &smbus6 {
+//     status = "okay";
+// };
+// 
+// &smbus7 {
+//     status = "okay";
+// };
+// 
+// &smbus8 {
+//     status = "okay";
+// };
+// 
+// &smbus9 {
+//     status = "okay";
+// };
+// 
+// &smbus10 {
+//     status = "okay";
+// };
+// 
+// &smbus11 {
+//     status = "okay";
+// };
+
+&smbus14 {
+    status = "okay";
 };
 
 &espi1 {

@@ -214,8 +214,7 @@ THREAD_DEFINE(fru_device, fru_device_init, fru_device_ready_sem, "dbus_broker");
 #endif
 
 #ifdef ENABLE_OPENBMC_ENTITY_MANAGER
-// THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "zbus_broker", "objmgr", "fru_device");
-THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "dbus_broker");
+THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "dbus_broker", "objmgr", "fru_device");
 #endif
 
 /*begin of dbus sensor related thread*/
