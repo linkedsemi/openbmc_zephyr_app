@@ -219,7 +219,7 @@ THREAD_DEFINE(entity_manager, entity_manager_init, entity_manager_ready_sem, "db
 
 /*begin of dbus sensor related thread*/
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_ADC
-THREAD_DEFINE(adc_sensor, adc_sensor_init, adc_sensor_ready_sem, "zbus_broker", "objmgr", "entity_manager");
+THREAD_DEFINE(adc_sensor, adc_sensor_init, adc_sensor_ready_sem, "dbus_broker", "objmgr", "entity_manager");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_EXTERNAL

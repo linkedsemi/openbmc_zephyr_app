@@ -253,7 +253,36 @@
     status = "okay";
 };
 
+&adc1 {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    pinctrl-0 = <&adc1_ain8_pc11 &adc1_ain9_pc12 &adc1_ain10_pc13>;
+    pinctrl-names = "default";
+    conversion_mode = <regular_mode>;
+    data_align = <ADC_DATAALIGN_RIGHT>;
+    continuous_conv_mode = <continuous>;
+    nbr_of_conversion = <3>;
+    discontinuous_conv_mode = <discontinuous>;
+    nbr_of_disc_conversion = <0>;
+    trig_type = <ADC_SOFTWARE_TRIGT>;
+    adc_drive_type = <BINBUF_DIRECT_DRIVE_ADC>;
+    adc_clk_div = <256>;
+    clk_cfg = <ADC_CH_CLOCK_DIV8>;
+    injected_offset = <0>;
+    fif_ctrl1 = <0xFFFF>;
+    #hwmon-in-cells = <1>;
+    status = "okay";
+};
+
 / {
+    hwmon0 {
+        compatible = "linkedsemi,hwmon";
+        class = <0x2>;
+        label = "hwmon0";
+        hwmon-ins = <&adc1 0x8>, <&adc1 0x9>, <&adc1 0xa>;
+        status = "okay";
+    };
+
     fstab {
         compatible = "zephyr,fstab";
 

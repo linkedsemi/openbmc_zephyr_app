@@ -603,7 +603,7 @@ int image_manager_init()
 #ifdef CONFIG_OPENBMC_DBUS_SENSORS
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_ADC)
 // dbus-sensors
-MODULE_DEFINE_CHAN_OBSERVER(adc_sensor);
+//MODULE_DEFINE_CHAN_OBSERVER(adc_sensor);
 int adc_sensor_main();
 K_SEM_DEFINE(adc_sensor_ready_sem, 0, 1);
 
