@@ -223,7 +223,7 @@ THREAD_DEFINE(adc_sensor, adc_sensor_init, adc_sensor_ready_sem, "dbus_broker", 
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_EXTERNAL
-THREAD_DEFINE(external_sensor, external_sensor_init, external_sensor_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(external_sensor, external_sensor_init, external_sensor_ready_sem, "dbus_broker", "objmgr");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_FAN

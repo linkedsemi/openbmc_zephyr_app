@@ -628,7 +628,7 @@ int adc_sensor_init()
 #endif
 
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_EXTERNAL)
-MODULE_DEFINE_CHAN_OBSERVER(external_sensor);
+//MODULE_DEFINE_CHAN_OBSERVER(external_sensor);
 int external_sensor_main();
 K_SEM_DEFINE(external_sensor_ready_sem, 0, 1);
 
