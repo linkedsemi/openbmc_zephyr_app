@@ -184,7 +184,7 @@
 // &smbus3 {
 //     status = "okay";
 // };
-// 
+//
 // &smbus4 {
 //     status = "okay";
 // };
@@ -196,23 +196,23 @@
 // &smbus6 {
 //     status = "okay";
 // };
-// 
+//
 // &smbus7 {
 //     status = "okay";
 // };
-// 
+//
 // &smbus8 {
 //     status = "okay";
 // };
-// 
+//
 // &smbus9 {
 //     status = "okay";
 // };
-// 
+//
 // &smbus10 {
 //     status = "okay";
 // };
-// 
+//
 // &smbus11 {
 //     status = "okay";
 // };
@@ -282,6 +282,57 @@
         hwmon-ins = <&adc1 0x8>, <&adc1 0x9>, <&adc1 0xa>;
         status = "okay";
     };
+
+    /*
+     * Generic model for class 5: set `sensor-type` and point `hwmon-ins`
+     * directly at the underlying sensor device node (which implements the
+     * Zephyr sensor API -- e.g. mps,mp5023 / ali,psu). No separate `sensor`
+     * phandle is needed: the sensor node already provides #hwmon-in-cells
+     * (via hwmon-controller.yaml), so `hwmon-ins = <&psu0 0>` carries the
+     * sensor device handle. hwmon_i2c never touches bus registers; it only
+     * calls sensor_sample_fetch()/sensor_channel_get(). The bus number and
+     * address exposed in `bus_addr` are derived from the sensor node's parent
+     * bus (`DT_BUS`) and `reg`, so no per-device code is needed in
+     * hwmon_i2c.c.
+     *
+     * Example (PSU on i2c5 @ 0x60):
+     *
+     * &i2c5 {
+     *     psu0: mp5023@60 {
+     *         compatible = "mps,mp5023";
+     *         reg = <0x60>;
+     *         status = "okay";
+     *     };
+     * };
+     *
+     * hwmon_psu0 {
+     *     compatible = "linkedsemi,hwmon";
+     *     class = <0x5>;
+     *     label = "hwmon_psu0";
+     *     sensor-type = "psu";
+     *     hwmon-ins = <&psu0 0>;
+     *     meas = "in1_input:vin1", "in3_input:vout1",
+     *            "curr1_input:iin1", "curr2_input:iout1",
+     *            "power1_input:pin", "power2_input:pout1",
+     *            "temp1_input", "fan1_input";
+     *     status = "okay";
+     * };
+     *
+     * `meas` lists the hwmon ABI files to expose. Each entry is
+     * "<chan><n>_input" with an OPTIONAL ":<label>" suffix. hwmon_i2c parses
+     * the filename at read time: prefix -> sensor_channel
+     * (in/curr/power/temp/fan), number -> val2 rail selector (number - 1). So
+     * in1=vin(val2=0), in3=vout(val2=2) for a PSU whose channel_get maps
+     * voltage val2 0->vin, 2->vout.
+     *
+     * The ":<label>" suffix creates a companion "<chan><n>_label" file
+     * (input->label) whose content is that text, e.g. in3_input:vout1 ->
+     * in3_label = "vout1". This lets dbus-sensors tell vin/vout, iin/iout,
+     * pin/pout apart (label heads vin1/vout1/iin1/iout1/pin/pout1). Drop the
+     * ":<label>" (e.g. "temp1_input", "fan1_input") to skip the label file;
+     * dbus-sensors then treats that rail with its generic "output" property.
+     */
+
 
     fstab {
         compatible = "zephyr,fstab";

@@ -231,7 +231,7 @@ THREAD_DEFINE(fan_sensor, fan_sensor_init, fan_sensor_ready_sem, "zbus_broker", 
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_HWMON_TEMP
-THREAD_DEFINE(hwmon_temp_sensor, hwmon_temp_sensor_init, hwmon_temp_sensor_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(hwmon_temp_sensor, hwmon_temp_sensor_init, hwmon_temp_sensor_ready_sem, "dbus_broker", "objmgr");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_INTELCPU

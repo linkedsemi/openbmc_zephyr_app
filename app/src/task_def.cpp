@@ -680,7 +680,7 @@ int fan_sensor_init()
 #endif
 
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_HWMON_TEMP)
-MODULE_DEFINE_CHAN_OBSERVER(hwmontemp_sensor);
+// MODULE_DEFINE_CHAN_OBSERVER(hwmontemp_sensor);
 int hwmon_temp_sensor_main();
 K_SEM_DEFINE(hwmon_temp_sensor_ready_sem, 0, 1);
 
