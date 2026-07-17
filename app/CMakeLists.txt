@@ -1,6 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 cmake_minimum_required(VERSION 3.20.0)
 
+# --- Self-test: fake temperature sensor (hwmon_i2c -> HwmonTempSensor) ---
+# Enable both the fake sensor driver (CONFIG_FAKE_TEMP_SENSOR) and its DT
+# overlay with a single flag:
+#   west build -b <board> app -DFAKE_TEMP_TEST=y
+# Leave off for production builds. MUST be set before find_package(Zephyr)
+# because the overlay is consumed during devicetree generation (Kconfig runs
+# first inside find_package, so the CONFIG cache var is picked up too).
+if(FAKE_TEMP_TEST)
+  set(CONFIG_FAKE_TEMP_SENSOR y CACHE BOOL "fake temp sensor" FORCE)
+  set(EXTRA_DTC_OVERLAY_FILE
+      "${CMAKE_CURRENT_LIST_DIR}/boards/lsqsh_evb_cpu1_fake_temp.overlay"
+      CACHE FILEPATH "fake temp test overlay" FORCE)
+endif()
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(openbmc LANGUAGES C CXX)
 
@@ -24,6 +38,11 @@ target_sources(app PRIVATE
   src/config_fs.c
   src/busctl_shell.c
 )
+
+# Self-test fake temperature sensor (hwmon_i2c -> HwmonTempSensor path).
+if (CONFIG_FAKE_TEMP_SENSOR)
+  target_sources(app PRIVATE src/fake_temp.c)
+endif()
 
 # Handle Unix socket compatibility
 target_compile_definitions(app PRIVATE

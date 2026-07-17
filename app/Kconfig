@@ -100,4 +100,13 @@ config FS_ROOT_OVERLAY
     prompt "Root filesystem overlay path"
     default "/overlay"
 
+config FAKE_TEMP_SENSOR
+	bool "Fake temperature sensor for hwmon self-test"
+	default n
+	help
+	  A simulated sensor device that returns a slowly-varying temperature
+	  (around 25 C) via the Zephyr sensor API. Use it to exercise the
+	  hwmon_i2c -> sysfs tempX_input -> HwmonTempSensor dbus path without
+	  real sensor hardware. Enable only for testing; keep off in production.
+
 source "Kconfig.zephyr"

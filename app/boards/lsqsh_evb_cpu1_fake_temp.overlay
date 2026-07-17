@@ -1,0 +1,35 @@
+/*
+ * Self-test overlay: fake temperature sensor -> hwmon -> HwmonTempSensor.
+ *
+ * Apply on top of the board's default overlay, e.g.:
+ *   west build -b <board> app -DFAKE_TEMP_TEST=y
+ *
+ * (The FAKE_TEMP_TEST CMake flag enables CONFIG_FAKE_TEMP_SENSOR and applies
+ * this overlay automatically; see app/CMakeLists.txt.)
+ *
+ * Entity Manager must carry a matching entry (Type must be in HwmonTempMain's
+ * chip whitelist; Bus/Address must match the bus_addr file hwmon_i2c emits,
+ * here "1-0048"):
+ *   { "Name": "fake_temp", "Type": "TMP75", "Bus": 1, "Address": 72 }
+ */
+
+&i2c1 {
+	fake_temp: fake-temp@48 {
+		compatible = "test,fake-temp-sensor";
+		reg = <0x48>;
+		#hwmon-in-cells = <1>;
+		status = "okay";
+	};
+};
+
+/ {
+	hwmon_fake_temp {
+		compatible = "linkedsemi,hwmon";
+		class = <0x5>;
+		label = "hwmon_fake_temp";
+		sensor-type = "temp";
+		hwmon-ins = <&fake_temp 0>;
+		meas = "temp1_input";
+		status = "okay";
+	};
+};
