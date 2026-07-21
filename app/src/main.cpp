@@ -2,6 +2,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <errno.h>
+#include <exception>
+#include <unwind.h>
 
 /* dbus-broker headers */
 // #include "broker/broker.h"
@@ -223,7 +225,7 @@ THREAD_DEFINE(adc_sensor, adc_sensor_init, adc_sensor_ready_sem, "dbus_broker", 
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_EXTERNAL
-THREAD_DEFINE(external_sensor, external_sensor_init, external_sensor_ready_sem, "dbus_broker", "objmgr");
+THREAD_DEFINE(external_sensor, external_sensor_init, external_sensor_ready_sem, "dbus_broker", "objmgr", "entity_manager");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_FAN
@@ -231,7 +233,7 @@ THREAD_DEFINE(fan_sensor, fan_sensor_init, fan_sensor_ready_sem, "zbus_broker", 
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_HWMON_TEMP
-THREAD_DEFINE(hwmon_temp_sensor, hwmon_temp_sensor_init, hwmon_temp_sensor_ready_sem, "dbus_broker", "objmgr");
+THREAD_DEFINE(hwmon_temp_sensor, hwmon_temp_sensor_init, hwmon_temp_sensor_ready_sem, "dbus_broker", "objmgr", "entity_manager");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_INTELCPU
@@ -243,7 +245,7 @@ THREAD_DEFINE(intrusion_sensor, intrusion_sensor_init, intrusion_sensor_ready_se
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_PSU
-THREAD_DEFINE(psu_sensor, psu_sensor_init, psu_sensor_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(psu_sensor, psu_sensor_init, psu_sensor_ready_sem, "dbus_broker", "objmgr", "entity_manager");
 #endif
 /* end of dbus sensor related thread*/
 

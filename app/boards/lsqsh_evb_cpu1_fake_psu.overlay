@@ -1,0 +1,43 @@
+/*
+ * Self-test overlay: fake PSU sensor -> hwmon -> PSUSensor.
+ *
+ * Apply on top of the board's default overlay, e.g.:
+ *   west build -b <board> app -DFAKE_PSU_TEST=y
+ *
+ * (The FAKE_PSU_TEST CMake flag enables CONFIG_FAKE_PSU_SENSOR and applies
+ * this overlay automatically; see app/CMakeLists.txt. It composes with
+ * -DFAKE_TEMP_TEST=y.)
+ *
+ * Entity Manager must carry a matching entry. PSUSensorMain requires the hwmon
+ * `name` file ("pmbus", emitted by hwmon_i2c for class-5 psu) to be in its chip
+ * whitelist, and matches {Bus, Address} against the bus_addr file hwmon_i2c
+ * emits, here "1-004a" (bus 1, addr 0x4a = 74):
+ *   { "Name": "fake_psu", "Type": "pmbus", "Bus": 1, "Address": 74 }
+ *
+ * Rail labels (vin/vout1/pin1/pout1/iout1/temp1/fan1) must be in
+ * PSUSensorMain's labelMatch table; they map each <rail>_input file to its
+ * dbus PSU property.
+ */
+
+&i2c1 {
+	fake_psu: fake-psu@4a {
+		compatible = "test,fake-psu-sensor";
+		reg = <0x4a>;
+		#hwmon-in-cells = <1>;
+		status = "okay";
+	};
+};
+
+/ {
+	hwmon_fake_psu {
+		compatible = "linkedsemi,hwmon";
+		class = <0x5>;
+		label = "hwmon_fake_psu";
+		sensor-type = "psu";
+		hwmon-ins = <&fake_psu 0>;
+		meas = "in1_input:vin", "in2_input:vin1", "in3_input:vout1",
+		       "power2_input:pin1", "power3_input:pout1",
+		       "curr1_input:iout1", "temp1_input:temp1", "fan1_input:fan1";
+		status = "okay";
+	};
+};

@@ -140,9 +140,20 @@ static int standard_broker_deployment(void)
     LOG_INF("Socketpair created: [%d, %d]",
             g_controller_fds[0], g_controller_fds[1]);
 
-    /* Step 2: Create broker */
+    /* Step 2: Create broker.
+     *
+     * broker_new(max_bytes, max_fds, max_matches, max_objects):
+     * these are per-USER quotas. On Zephyr, every dbus service connects
+     * over AF_UNIX with the same (default) uid, so they all share ONE
+     * user and therefore ONE quota pool. The original 64 matches / 1MB /
+     * 128 objects were exhausted as soon as several services (objmgr,
+     * ipmid, kcsbridge, sensor mains) plus PSU registered their matches
+     * and objects, causing sd_bus_match() to fail with
+     * "No buffer space available" (DRIVER_E_QUOTA) and abort the caller.
+     * Raise all four limits. They are soft caps (memory is allocated
+     * on demand), so this does not pre-reserve RAM. */
     r = broker_new(&g_broker, NULL, machine_id, g_controller_fds[0],
-                   1024 * 1024, 256, 64, 128);
+                   4 * 1024 * 1024, 512, 4096, 4096);
     if (r < 0) {
         LOG_ERR("broker_new failed: %d", r);
         close(g_controller_fds[0]);

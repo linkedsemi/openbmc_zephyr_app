@@ -109,4 +109,14 @@ config FAKE_TEMP_SENSOR
 	  hwmon_i2c -> sysfs tempX_input -> HwmonTempSensor dbus path without
 	  real sensor hardware. Enable only for testing; keep off in production.
 
+config FAKE_PSU_SENSOR
+	bool "Fake PSU sensor for hwmon self-test"
+	default n
+	help
+	  A simulated PMBus-style sensor returning slowly-varying voltage/power
+	  rail values (vin/vout/pin/pout) via the Zephyr sensor API. Use it to
+	  exercise the hwmon_i2c -> sysfs <rail>_input -> PSUSensor dbus path
+	  without real PMBus hardware. Enable only for testing; keep off in
+	  production.
+
 source "Kconfig.zephyr"

@@ -757,7 +757,7 @@ int intrusion_sensor_init()
 #endif
 
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_PSU)
-MODULE_DEFINE_CHAN_OBSERVER(psu_sensor);
+// MODULE_DEFINE_CHAN_OBSERVER(psu_sensor);
 int psu_sensor_main();
 K_SEM_DEFINE(psu_sensor_ready_sem, 0, 1);
 

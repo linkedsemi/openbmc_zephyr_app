@@ -15,6 +15,16 @@ if(FAKE_TEMP_TEST)
       CACHE FILEPATH "fake temp test overlay" FORCE)
 endif()
 
+# --- Self-test: fake PSU sensor (hwmon_i2c -> PSUSensor) ---
+#   west build -b <board> app -DFAKE_PSU_TEST=y
+# (Can be combined with -DFAKE_TEMP_TEST=y: the overlay is appended to the
+# list so both apply. Set before find_package(Zephyr), same reason as above.)
+if(FAKE_PSU_TEST)
+  set(CONFIG_FAKE_PSU_SENSOR y CACHE BOOL "fake psu sensor" FORCE)
+  list(APPEND EXTRA_DTC_OVERLAY_FILE
+       "${CMAKE_CURRENT_LIST_DIR}/boards/lsqsh_evb_cpu1_fake_psu.overlay")
+endif()
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(openbmc LANGUAGES C CXX)
 
@@ -42,6 +52,11 @@ target_sources(app PRIVATE
 # Self-test fake temperature sensor (hwmon_i2c -> HwmonTempSensor path).
 if (CONFIG_FAKE_TEMP_SENSOR)
   target_sources(app PRIVATE src/fake_temp.c)
+endif()
+
+# Self-test fake PSU sensor (hwmon_i2c -> PSUSensor path).
+if (CONFIG_FAKE_PSU_SENSOR)
+  target_sources(app PRIVATE src/fake_psu.c)
 endif()
 
 # Handle Unix socket compatibility
