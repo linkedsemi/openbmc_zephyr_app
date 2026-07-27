@@ -288,7 +288,7 @@ int start_thread_with_dependencies(const char *thread_name)
         }
 
         // Wait for dependency to be ready (100 seconds timeout)
-        ret = wait_for_dependency_ready(dep_desc, dep_name, 100);
+        ret = wait_for_dependency_ready(dep_desc, dep_name, 20);
         if (ret != 0) {
             LOG_ERR("Error: Dependency '%s' failed to become ready", dep_name);
             goto cleanup;

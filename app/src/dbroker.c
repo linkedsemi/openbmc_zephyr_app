@@ -15,6 +15,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <printk_thread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <zephyr/net/net_ip.h>
@@ -38,6 +39,17 @@ LOG_MODULE_REGISTER(DBROKER, LOG_LEVEL_DBG);
 #define DBUS_BROKER_SOCK_PATH "/tmp/dbus-broker"
 
 /*
+ * Persistent log context for the broker. dbus-broker keeps a pointer to this
+ * (broker->log / bus->log) and dereferences it from many logging code paths
+ * (log_append_common, bus_log_append_sender, log_commitf, ...). Passing NULL
+ * there made every one of those fault with a NULL-pointer load the instant the
+ * broker tried to log anything (e.g. a peer sending a malformed message).
+ * A log_init()'d context in LOG_MODE_NONE is safe: the Zephyr port routes it
+ * through printk instead of touching the journal staging buffer.
+ */
+static Log g_broker_log;
+
+/*
  * Global variables for broker communication
  */
 int g_controller_fds[2] = { -1, -1 };
@@ -55,6 +67,11 @@ struct deployment_state deploy_state = {
 };
 extern Broker *g_broker;
 
+/* Tracks broker liveness so clients can fail fast once the broker has
+ * died (instead of hanging on a ~20s ETIMEDOUT connect loop). */
+static bool g_broker_alive;
+static bool g_broker_was_alive;
+
 /* ================================================================== */
 /* Listener socket (AF_UNIX)                                           */
 /* ================================================================== */
@@ -65,7 +82,7 @@ static int create_listener_socket(void)
 
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
-        LOG_ERR("Failed to create AF_UNIX socket: %d", errno);
+        printk_thread("Failed to create AF_UNIX socket: %d", errno);
         return -errno;
     }
 
@@ -79,14 +96,14 @@ static int create_listener_socket(void)
             sizeof(addr.sun_path) - 1);
 
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        LOG_ERR("Failed to bind AF_UNIX socket '%s': %d",
+        printk_thread("Failed to bind AF_UNIX socket '%s': %d",
                 DBUS_BROKER_SOCK_PATH, errno);
         close(fd);
         return -errno;
     }
 
     if (listen(fd, 128) < 0) {
-        LOG_ERR("Failed to listen on AF_UNIX socket: %d", errno);
+        printk_thread("Failed to listen on AF_UNIX socket: %d", errno);
         close(fd);
         return -errno;
     }
@@ -98,7 +115,7 @@ static int create_listener_socket(void)
         fcntl(fd, F_SETFL, flags | O_NONBLOCK);
     }
 
-    LOG_INF("AF_UNIX listener created: fd=%d path=%s", fd,
+    printk_thread("AF_UNIX listener created: fd=%d path=%s", fd,
             DBUS_BROKER_SOCK_PATH);
     return fd;
 }
@@ -112,7 +129,7 @@ static int add_listener_to_broker(int listener_fd)
                                 "/org/bus1/DBus/Listener/0",
                                 listener_fd, NULL);
     if (r < 0) {
-        LOG_ERR("Failed to add listener to broker: %s (code: %d)",
+        printk_thread("Failed to add listener to broker: %s (code: %d)",
                 strerror(-r), r);
         return r;
     }
@@ -134,7 +151,7 @@ static int standard_broker_deployment(void)
 
     r = socketpair(AF_UNIX, SOCK_STREAM, 0, g_controller_fds);
     if (r < 0) {
-        LOG_ERR("socketpair failed: %d", r);
+        printk_thread("socketpair failed: %d", r);
         return -errno;
     }
     LOG_INF("Socketpair created: [%d, %d]",
@@ -152,10 +169,11 @@ static int standard_broker_deployment(void)
      * "No buffer space available" (DRIVER_E_QUOTA) and abort the caller.
      * Raise all four limits. They are soft caps (memory is allocated
      * on demand), so this does not pre-reserve RAM. */
-    r = broker_new(&g_broker, NULL, machine_id, g_controller_fds[0],
+    log_init(&g_broker_log);
+    r = broker_new(&g_broker, &g_broker_log, machine_id, g_controller_fds[0],
                    4 * 1024 * 1024, 512, 4096, 4096);
     if (r < 0) {
-        LOG_ERR("broker_new failed: %d", r);
+        printk_thread("broker_new failed: %d", r);
         close(g_controller_fds[0]);
         close(g_controller_fds[1]);
         return r;
@@ -166,7 +184,7 @@ static int standard_broker_deployment(void)
     /* Step 3: Create AF_UNIX listener */
     listener_fd = create_listener_socket();
     if (listener_fd < 0) {
-        LOG_ERR("Failed to create AF_UNIX listener: %d", listener_fd);
+        printk_thread("Failed to create AF_UNIX listener: %d", listener_fd);
         broker_free(g_broker);
         g_broker = NULL;
         close(g_controller_fds[0]);
@@ -177,7 +195,7 @@ static int standard_broker_deployment(void)
     /* Step 4: Add listener to broker */
     r = add_listener_to_broker(listener_fd);
     if (r < 0) {
-        LOG_ERR("Failed to add listener to broker: %d", r);
+        printk_thread("Failed to add listener to broker: %d", r);
         close(listener_fd);
         broker_free(g_broker);
         g_broker = NULL;
@@ -197,6 +215,8 @@ static int standard_broker_deployment(void)
     /* Give broker time to start event loop */
     k_msleep(1000);
 
+    g_broker_alive = true;
+    g_broker_was_alive = true;
     return 0;
 }
 
@@ -206,7 +226,7 @@ static int deploy_standard_broker(void)
 
     r = standard_broker_deployment();
     if (r < 0) {
-        LOG_ERR("Standard deployment failed: %d", r);
+        printk_thread("Standard deployment failed: %d", r);
         return r;
     }
 
@@ -214,6 +234,8 @@ static int deploy_standard_broker(void)
             DBUS_BROKER_SOCK_PATH);
     k_msleep(500);
     r = broker_run(g_broker);
+    printk_thread("[DBus Broker] broker_run() returned %d — event loop stopped",
+            r);
 
     if (g_broker) {
         broker_free(g_broker);
@@ -240,11 +262,12 @@ static void broker_thread_entry(void *p1, void *p2, void *p3)
     int r;
 
     r = deploy_standard_broker();
+    g_broker_alive = false;
 
     if (r == 0) {
-        LOG_INF("[DBus Broker] Broker completed successfully");
+        printk("[DBus Broker] Broker completed successfully");
     } else {
-        LOG_ERR("[DBus Broker] Broker exited with error: %d", r);
+        printk("[DBus Broker] Broker thread EXITED with error: %d", r);
     }
 }
 
@@ -284,13 +307,21 @@ int connect_to_dbroker(sd_bus **bus)
     sd_bus *internal_bus = NULL;
 
     if (!bus) {
-        LOG_ERR("[DBroker API] Invalid parameter: bus is NULL");
+        printk_thread("[DBroker API] Invalid parameter: bus is NULL");
         return -EINVAL;
     }
 
     if (!broker_started) {
         k_msleep(1000);
         broker_started = true;
+    }
+
+    /* If the broker was alive before but has since exited, fail fast
+     * instead of spinning for ~20s on a dead socket. */
+    if (g_broker_was_alive && !g_broker_alive) {
+        printk("[DBroker API] Broker thread already exited; "
+                "refusing to connect");
+        return -ENOTCONN;
     }
 
     /* Retry connecting to the AF_UNIX listener until broker is ready.
@@ -303,7 +334,7 @@ int connect_to_dbroker(sd_bus **bus)
             if (client_fd < 0) {
                 /* socket() failed - retry after delay */
                 if (retry_count < 5 || retry_count % 50 == 0) {
-                    LOG_INF("[DBroker API] socket() failed on attempt "
+                    printk_thread("[DBroker API] socket() failed on attempt "
                             "%d: %d (%s)", retry_count + 1, errno,
                             strerror(errno));
                 }
@@ -326,7 +357,7 @@ int connect_to_dbroker(sd_bus **bus)
         close(client_fd);
         client_fd = -1;
         if (retry_count < 5 || retry_count % 50 == 0) {
-            LOG_INF("[DBroker API] Connection attempt %d failed, "
+            printk_thread("[DBroker API] Connection attempt %d failed, "
                     "errno: %d (%s)", retry_count + 1, errno,
                     strerror(errno));
         }
@@ -337,12 +368,12 @@ retry:
     }
 
     if (client_fd < 0) {
-        LOG_ERR("[DBroker API] Failed to connect after %d retries",
+        printk_thread("[DBroker API] Failed to connect after %d retries",
                 retry_count);
         return -ENOTCONN;
     }
 
-    LOG_INF("[DBroker API] Connected to broker via AF_UNIX: fd=%d",
+    printk_thread("[DBroker API] Connected to broker via AF_UNIX: fd=%d",
             client_fd);
 
     /* Set non-blocking for sd-bus */
@@ -354,14 +385,14 @@ retry:
     /* Create sd-bus using the connected socket */
     r = sd_bus_new(&internal_bus);
     if (r < 0) {
-        LOG_ERR("[DBroker API] sd_bus_new failed: %d", r);
+        printk_thread("[DBroker API] sd_bus_new failed: %d", r);
         close(client_fd);
         return r;
     }
 
     r = sd_bus_set_bus_client(internal_bus, true);
     if (r < 0) {
-        LOG_ERR("[DBroker API] sd_bus_set_bus_client failed: %d", r);
+        printk_thread("[DBroker API] sd_bus_set_bus_client failed: %d", r);
         sd_bus_unref(internal_bus);
         close(client_fd);
         return r;
@@ -369,7 +400,7 @@ retry:
 
     r = sd_bus_set_fd(internal_bus, client_fd, client_fd);
     if (r < 0) {
-        LOG_ERR("[DBroker API] sd_bus_set_fd failed: %d", r);
+        printk_thread("[DBroker API] sd_bus_set_fd failed: %d", r);
         sd_bus_unref(internal_bus);
         close(client_fd);
         return r;
@@ -378,13 +409,13 @@ retry:
     /* Allow sd_bus_default_system() to find this bus */
     r = sd_bus_set_default_system(internal_bus);
     if (r < 0 && r != -EEXIST) {
-        LOG_WRN("[DBroker API] sd_bus_set_default_system: %d", r);
+        printk_thread("[DBroker API] sd_bus_set_default_system: %d", r);
     }
 
     /* Start the bus (sends Hello message) */
     r = sd_bus_start(internal_bus);
     if (r < 0) {
-        LOG_WRN("[DBroker API] sd_bus_start returned: %d", r);
+        printk_thread("[DBroker API] sd_bus_start returned: %d", r);
     }
 
     /* Wait for bus to become ready (process Hello response) */
@@ -392,7 +423,7 @@ retry:
     while (!sd_bus_is_ready(internal_bus) && retry_count < 200) {
         r = sd_bus_process(internal_bus, NULL);
         if (r < 0) {
-            LOG_ERR("[DBroker API] Failed to process bus messages: %d",
+            printk_thread("[DBroker API] Failed to process bus messages: %d",
                     r);
             break;
         }
@@ -401,7 +432,7 @@ retry:
     }
 
     if (!sd_bus_is_ready(internal_bus)) {
-        LOG_ERR("[DBroker API] Bus not ready after %d attempts",
+        printk_thread("[DBroker API] Bus not ready after %d attempts",
                 retry_count);
         sd_bus_unref(internal_bus);
         return -ETIMEDOUT;
@@ -410,7 +441,7 @@ retry:
     LOG_DBG("[DBroker API] Bus ready after %d attempts", retry_count);
 
     *bus = internal_bus;
-    printk("connected to broker\n");
+    printk_thread("connected to broker\n");
 
     return 0;
 }
@@ -421,7 +452,7 @@ int disconnect_from_dbroker(sd_bus *bus)
         return -EINVAL;
     }
 
-    LOG_INF("[sd-bus] Disconnecting from dbus-broker...");
+    printk_thread("[sd-bus] Disconnecting from dbus-broker...");
 
     /*
      * sd_bus_flush_close_unref does all the work:
@@ -441,6 +472,44 @@ int disconnect_from_dbroker(sd_bus *bus)
     k_msleep(50);
     sd_bus_unref(bus);
 
-    LOG_INF("[sd-bus] Disconnected successfully");
+    printk_thread("[sd-bus] Disconnected successfully");
     return 0;
+}
+
+/* ================================================================== */
+/* Death-path capture                                                 */
+/*                                                                     */
+/* The broker thread disappears from the scheduler without broker_run()*/
+/* ever returning and without a system panic. That means it was taken  */
+/* down by exit()/abort() -> k_thread_abort() inside dbus-broker      */
+/* (e.g. a c_assert failure or a fatal log+exit). On this port those   */
+/* messages go to stderr (fd 2), which the log capture does NOT see,   */
+/* so the death is silent. Capture it by routing both _exit() and      */
+/* abort() through printk.                                             */
+/* ================================================================== */
+
+/* newlib's default _exit() is __weak (just spins forever). Override it
+ * so any exit() from anywhere prints the status before the thread dies. */
+void _exit(int status)
+{
+        const char *name = k_thread_name_get(k_current_get());
+
+        printk("[DEATH] _exit(%d) called from thread '%s' — "
+               "broker/daemon aborting\n",
+               status, name ? name : "?");
+        k_thread_abort(k_current_get());
+        CODE_UNREACHABLE;
+}
+
+/* --wrap=abort redirects every abort() call here (covers c_assert ->
+ * abort() paths inside dbus-broker). */
+void __wrap_abort(void)
+{
+        const char *name = k_thread_name_get(k_current_get());
+
+        printk("[DEATH] abort() called from thread '%s' — "
+               "broker/daemon aborting\n",
+               name ? name : "?");
+        k_thread_abort(k_current_get());
+        CODE_UNREACHABLE;
 }

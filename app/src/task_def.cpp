@@ -4,8 +4,45 @@
 #include "task_enable.hpp"
 #include <printk_thread.h>
 #include <string.h>
+#include <stdlib.h>
+#include <exception>
 
 #define APP_PRI 10 // zephyr priority = 14 - APP_PRI
+
+/*
+ * Exception guard trampoline.
+ *
+ * On Zephyr (single address space) an uncaught C++ exception in ANY thread
+ * calls std::terminate() -> abort() -> k_panic(), killing the whole system.
+ * Observed in the field: broker reset a client connection, sdbusplus threw
+ * SdBusError from sd_bus_process, nobody caught it, whole BMC panicked.
+ *
+ * This trampoline confines the damage to the offending thread and logs it.
+ */
+struct task_trampoline_ctx {
+    void *(*routine)(void *);
+    const char *name;
+};
+
+static void *task_trampoline(void *arg)
+{
+    struct task_trampoline_ctx *ctx = static_cast<struct task_trampoline_ctx *>(arg);
+    void *(*routine)(void *) = ctx->routine;
+    const char *name = ctx->name;
+
+    free(ctx);
+
+    try {
+        return routine(NULL);
+    } catch (const std::exception &e) {
+        printk_thread("FATAL: thread %s killed by uncaught exception: %s",
+                      name, e.what());
+    } catch (...) {
+        printk_thread("FATAL: thread %s killed by unknown uncaught exception",
+                      name);
+    }
+    return NULL;
+}
 
 int create_task_with_pthread(pthread_t *thread, const char *name, void *stack, size_t stack_size, void* (*routine)(void *), bool join_flag)
 {
@@ -29,10 +66,21 @@ int create_task_with_pthread(pthread_t *thread, const char *name, void *stack, s
         return ret;
     }
 
-    ret = pthread_create(thread, &attr, routine, NULL);
+    struct task_trampoline_ctx *ctx = static_cast<struct task_trampoline_ctx *>(
+        malloc(sizeof(*ctx)));
+    if (ctx == NULL)
+    {
+        printk_thread("ctx alloc failed: task %s\n", name);
+        return -ENOMEM;
+    }
+    ctx->routine = routine;
+    ctx->name = name;
+
+    ret = pthread_create(thread, &attr, task_trampoline, ctx);
     if (ret != 0)
     {
         printk_thread("pthread_create failed: task %s, %d, %s\n", name, ret, strerror(ret));
+        free(ctx);
         return ret;
     }
 

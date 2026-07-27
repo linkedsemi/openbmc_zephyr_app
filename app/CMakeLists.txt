@@ -68,6 +68,10 @@ target_compile_definitions(app PRIVATE
 
 zephyr_compile_options(-msmall-data-limit=0 -Wno-strict-prototypes -Wno-macro-redefinition)
 target_link_options(app PRIVATE -Wl,--no-relax)
+# Route every abort() call through our __wrap_abort() so a silent
+# c_assert/abort() inside dbus-broker (which would otherwise kill the
+# broker thread with no log) is captured via printk.
+target_link_options(app PRIVATE -Wl,--wrap=abort)
 
 if (CONFIG_ZEPHYRBMC_FILESYSTEM)
 zephyr_library_link_libraries(filesystem)

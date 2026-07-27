@@ -36,6 +36,18 @@ extern int g_controller_fds[2];
 extern Broker *g_broker;
 extern struct deployment_state deploy_state;
 
+/*
+ * Persistent log context for the broker. dbus-broker stores a pointer to this
+ * (broker->log / bus->log) and dereferences it from many code paths (e.g.
+ * log_append_common, bus_log_append_sender, log_commitf). Passing NULL here
+ * (as was done before) makes every one of those paths fault with a NULL-pointer
+ * load the moment the broker tries to log anything (e.g. a peer sending a
+ * malformed message). A log_init()'d context in LOG_MODE_NONE is safe: the
+ * Zephyr port routes it through printk instead of touching the journal buffer.
+ * Must be file-scope/static so the pointer stays valid for the broker's lifetime.
+ */
+static Log g_broker_log;
+
 /* Controller bus for sending D-Bus method calls to broker */
 static sd_bus *g_controller_bus = NULL;
 
@@ -478,7 +490,8 @@ static int standard_broker_deployment(void)
     LOG_INF("✓ Socketpair created: [%d, %d]", g_controller_fds[0], g_controller_fds[1]);
 
     /* Step 2: Create broker FIRST (this might help with timing) */
-    r = broker_new(&g_broker, NULL, machine_id, g_controller_fds[0],
+    log_init(&g_broker_log);
+    r = broker_new(&g_broker, &g_broker_log, machine_id, g_controller_fds[0],
                    1024*1024, 256, 64, 128);
     if (r < 0) {
         LOG_ERR("broker_new failed: %s", strerror(-r));

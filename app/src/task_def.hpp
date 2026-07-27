@@ -28,7 +28,7 @@ int create_task_with_pthread(pthread_t *thread, const char *name,
 //net config init
 // extern struct k_sem net_config_init_ready_sem;
 
-// zbus broker
+// dbus broker
 #define CONFIG_THREAD_PRI_DBUS_BROKER 10
 #define DBUS_BROKER_THREAD_STACK_SIZE (32 * 1024)
 int dbus_broker_init();
