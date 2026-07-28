@@ -253,6 +253,10 @@
     status = "okay";
 };
 
+&caseopen {
+    status = "okay";
+};
+
 &adc1 {
     #address-cells = <1>;
     #size-cells = <0>;
