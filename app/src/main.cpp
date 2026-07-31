@@ -241,7 +241,7 @@ THREAD_DEFINE(intel_cpu_sensor, intel_cpu_sensor_init, intel_cpu_sensor_ready_se
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_INTRUSION
-THREAD_DEFINE(intrusion_sensor, intrusion_sensor_init, intrusion_sensor_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(intrusion_sensor, intrusion_sensor_init, intrusion_sensor_ready_sem, "dbus_broker", "objmgr", "entity_manager");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_PSU

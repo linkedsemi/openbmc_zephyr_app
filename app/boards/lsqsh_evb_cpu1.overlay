@@ -337,6 +337,16 @@
      * dbus-sensors then treats that rail with its generic "output" property.
      */
 
+    hwmon_caseopen: hwmon_caseopen {
+        compatible = "linkedsemi,hwmon";
+        class = <0x5>;
+        label = "hwmon_caseopen";
+        sensor-type = "intrusion";
+        hwmon-ins = <&caseopen 0>;
+        meas = "intrusion1_input";
+        status = "okay";
+    };
+
 
     fstab {
         compatible = "zephyr,fstab";

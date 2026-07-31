@@ -780,7 +780,7 @@ int intel_cpu_sensor_init()
 
 
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_INTRUSION)
-MODULE_DEFINE_CHAN_OBSERVER(intrusion_sensor);
+// MODULE_DEFINE_CHAN_OBSERVER(intrusion_sensor);
 int intrusion_sensor_main();
 K_SEM_DEFINE(intrusion_sensor_ready_sem, 0, 1);
 
