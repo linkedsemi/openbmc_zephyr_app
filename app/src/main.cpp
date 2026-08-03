@@ -229,7 +229,7 @@ THREAD_DEFINE(external_sensor, external_sensor_init, external_sensor_ready_sem, 
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_FAN
-THREAD_DEFINE(fan_sensor, fan_sensor_init, fan_sensor_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(fan_sensor, fan_sensor_init, fan_sensor_ready_sem, "dbus_broker", "objmgr");
 #endif
 
 #ifdef ENABLE_OPENBMC_DBUS_SENSORS_HWMON_TEMP

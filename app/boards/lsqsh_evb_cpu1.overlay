@@ -347,6 +347,23 @@
         status = "okay";
     };
 
+    hwmon1 {
+        compatible = "linkedsemi,hwmon";
+        class = <0x0>;
+        label = "hwmon1";
+        hwmon-ins = <&cap 6>;//fan_tach2
+        hwmon-outs = <&pwm 12>;//fan_pwm_a
+        status = "okay";
+    };
+
+    hwmon2 {
+        compatible = "linkedsemi,hwmon";
+        class = <0x0>;
+        label = "hwmon2";
+        hwmon-ins = <&cap 0>;//fan_tach13
+        hwmon-outs = <&pwm 11>;//fan_pwm_b
+        status = "okay";
+    };
 
     fstab {
         compatible = "zephyr,fstab";
@@ -375,5 +392,36 @@
             lookahead-size = <256>;
             block-cycles = <512>;
         };
+    };
+};
+
+&cap {
+    prescaler = <7>;
+    #hwmon-in-cells = <1>;
+    channels = <CAP_MODE1 CAP_DISABLED CAP_MODE1 CAP_MODE1 CAP_MODE1 CAP_DISABLED CAP_MODE1 CAP_DISABLED CAP_DISABLED CAP_DISABLED CAP_DISABLED CAP_DISABLED CAP_DISABLED CAP_DISABLED CAP_DISABLED CAP_DISABLED>;//cap_mode
+    pinctrl-0 = < &cap1_rx_pa08 &cap7_rx_pg02>;
+    // < &cap1_rx_pa08 &cap2_rx_pb01 &cap3_rx_pc02 &cap4_rx_pc03 &cap5_rx_pf04 &cap6_rx_pf05
+    // &cap7_rx_pg02 &cap8_rx_pm07 &cap9_rx_pi00 &cap10_rx_pi01 &cap11_rx_pn14 &cap12_rx_pn15
+    // &cap13_rx_pn02 &cap14_rx_pq00 &cap15_rx_pq01 &cap16_rx_pq02 >;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&pwm{
+    status = "okay";
+    prescaler = <3>;
+    #hwmon-out-cells = <1>;
+    pinctrl-0 = <&fan_pwm2_pa15  &fan_pwm12_pn12 &fan_pwm13_pn13>;
+    pinctrl-names = "default";
+};
+
+&pinctrl {
+    /omit-if-no-ref/fan_pwm12_pn12: fan_pwm12_pn12 {
+        pinmux = <PWM12_FUNC1_IDX25_PINMUX_PN(12)>;
+        output-enable;
+    };
+    /omit-if-no-ref/fan_pwm13_pn13: fan_pwm13_pn13 {
+        pinmux = <PWM13_FUNC1_IDX26_PINMUX_PN(13)>;
+        output-enable;
     };
 };

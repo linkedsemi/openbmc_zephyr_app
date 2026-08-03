@@ -701,10 +701,10 @@ int external_sensor_init()
 #endif
 
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_FAN)
-MODULE_DEFINE_CHAN_OBSERVER(fan_sensor);
+// MODULE_DEFINE_CHAN_OBSERVER(fan_sensor);
 int fan_sensor_main();
-struct k_thread FAN_SENSOR_thread;
-Z_KERNEL_STACK_DEFINE_IN(FAN_SENSOR_thread_stack, FAN_SENSOR_THREAD_STACK_SIZE, THREAD_STACK_SECTION);
+// struct k_thread FAN_SENSOR_thread;
+// Z_KERNEL_STACK_DEFINE_IN(FAN_SENSOR_thread_stack, FAN_SENSOR_THREAD_STACK_SIZE, THREAD_STACK_SECTION);
 K_SEM_DEFINE(fan_sensor_ready_sem, 0, 1);
 
 void* fan_sensor_thread_handler(void *arg)
