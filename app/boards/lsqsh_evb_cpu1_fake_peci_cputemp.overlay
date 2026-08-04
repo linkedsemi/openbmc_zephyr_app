@@ -1,0 +1,39 @@
+/ {
+    /* Fake PECI CPU temperature/power sensor for IntelCPUSensor self-test.
+     * Returns slowly-varying fixed values through the Zephyr sensor API.
+     * hwmon_i2c exposes temp/power *_input + *_label files so
+     * IntelCPUSensorMain.cpp can scan them like a real PECI hwmon node.
+     *
+     * Apply on top of the board's default overlay, e.g.:
+     *   west build -b <board> app -DFAKE_PECI_CPUTEMP_TEST=y
+     *
+     * (The FAKE_PECI_CPUTEMP_TEST CMake flag enables CONFIG_FAKE_PECI_CPUTEMP
+     * and applies this overlay automatically; see app/CMakeLists.txt.)
+     */
+    fake_peci_cpu0: fake-peci-cputemp {
+        compatible = "test,fake-peci-cputemp";
+        #hwmon-in-cells = <1>;
+        status = "okay";
+    };
+
+    hwmon_peci_cpu0: hwmon_peci_cpu0 {
+        compatible = "linkedsemi,hwmon";
+        class = <0x5>;
+        /* DT label = device identifier, used as the hwmon directory
+         * name AND as the value of the `label` sysfs file. NOT the
+         * same as the `name` file (which the hwmon_i2c driver fills
+         * from sensor-type -- "peci_cputemp" in this case, so that
+         * IntelCPUSensorMain's `name == "peci_cputemp"` filter
+         * matches). */
+        label = "hwmon_peci_cpu0";
+        sensor-type = "peci_cputemp";
+        hwmon-ins = <&fake_peci_cpu0 0>;
+        meas = "temp1_input:DTS",
+               "temp2_input:Margin",
+               "power1_input:cpu power",
+               "power2_input:dimm power",
+               "temp3_input:DIMM A1",
+               "temp4_input:DIMM B1";
+        status = "okay";
+    };
+};

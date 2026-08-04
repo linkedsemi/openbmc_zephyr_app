@@ -1,0 +1,76 @@
+，/*
+ * Real Intel PECI CPU sensor overlay (CONFIG_SENSOR_INTEL_PECI).
+ *
+ * This is the "real hardware" counterpart of lsqsh_evb_cpu1_fake_peci_cputemp.overlay.
+ * Same meas layout, same hwmon label, same IntelCPUSensor dbus object -- only
+ * the underlying sensor driver changes from fake_peci_cputemp to intel_peci.
+ *
+ * Enable from prj.conf (NOT a -D...=y build flag -- those are reserved for
+ * fake self-test sensors):
+ *
+ *   CONFIG_PECI=y
+ *   CONFIG_PECI_LS=y            # linkedsemi PECI controller driver
+ *   CONFIG_SENSOR_INTEL_PECI=y
+ *
+ * The matching DT overlay (this file) is applied automatically by
+ * app/CMakeLists.txt once CONFIG_SENSOR_INTEL_PECI is set, so no extra
+ * -DEXTRA_DTC_OVERLAY_FILE=... is needed.
+ *
+ * Hardware prerequisites (handled here):
+ *   1. &peci1 enabled + pinmux (the SoC dtsi leaves it status="disabled")
+ *   2. &peci1 aliased as peci-0 (IntelCPUSensorMain on Linux reads /dev/peci-0;
+ *      on Zephyr we don't, but the alias is the conventional way to mark the
+ *      primary PECI bus for tooling / future use)
+ *   3. intel-peci-cputemp node pointing at the controller
+ *   4. hwmon_intel_cpu0 node exposing the 6 rails with the same labels
+ *      IntelCPUSensorMain matches in the JSON config (DTS / Margin / cpu
+ *      power / dimm power / DIMM A1 / DIMM B1).
+ *
+ * Mutually exclusive with -DFAKE_PECI_CPUTEMP_TEST=y -- both define a hwmon
+ * node with the same "peci_cputemp" label, which would clash on the dbus
+ * side. The CMakeLists.txt guards against this.
+ *
+ * CPU PECI host address: 0x30 for CPU0 (PECI 3.0 reserves 0x30..0x37). Add a
+ * second instance + hwmon_intel_cpu1 with cpu-address=<0x31> for CPU1.
+ */
+
+&peci1 {
+	status = "okay";
+	pinctrl-0 = <&peci_default_pc04>;
+	pinctrl-names = "default";
+};
+
+/ {
+	aliases {
+		peci-0 = &peci1;
+	};
+
+	intel_peci_cpu0: intel-peci-cputemp {
+		compatible = "intel,peci-cputemp";
+		peci-controller = <&peci1>;
+		cpu-address = <0x30>;
+		/* Optional: hard-code Tjmax to skip one RdPkgConfig at init.
+		 * Drop this line to let the driver query index=16. */
+		/* tjmax = <100>; */
+		#hwmon-in-cells = <1>;
+		status = "okay";
+	};
+
+	hwmon_intel_cpu0: hwmon_intel_cpu0 {
+		compatible = "linkedsemi,hwmon";
+		class = <0x5>;
+		/* label = device identifier (hwmon directory + `label` file);
+		 * sensor-type -> `name` file = "peci_cputemp" so
+		 * IntelCPUSensorMain's name-based filter matches. */
+		label = "hwmon_peci_cpu0";
+		sensor-type = "peci_cputemp";
+		hwmon-ins = <&intel_peci_cpu0 0>;
+		meas = "temp1_input:DTS",
+		       "temp2_input:Margin",
+		       "power1_input:cpu power",
+		       "power2_input:dimm power",
+		       "temp3_input:DIMM A1",
+		       "temp4_input:DIMM B1";
+		status = "okay";
+	};
+};

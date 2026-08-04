@@ -754,7 +754,7 @@ int hwmon_temp_sensor_init()
 
 
 #if defined(ENABLE_OPENBMC_DBUS_SENSORS_INTELCPU)
-MODULE_DEFINE_CHAN_OBSERVER(intelcpu_sensor);
+// MODULE_DEFINE_CHAN_OBSERVER(intelcpu_sensor);
 int intel_cpu_sensor_main();
 K_SEM_DEFINE(intel_cpu_sensor_ready_sem, 0, 1);
 

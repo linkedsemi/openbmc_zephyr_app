@@ -119,4 +119,44 @@ config FAKE_PSU_SENSOR
 	  without real PMBus hardware. Enable only for testing; keep off in
 	  production.
 
+config FAKE_PECI_CPUTEMP
+	bool "Fake PECI CPU temperature/power sensor for hwmon self-test"
+	default n
+	help
+	  A simulated Intel PECI CPU sensor returning slowly-varying temperature
+	  (DTS, Margin, DIMM) and power (cpu power, dimm power) values via the
+	  Zephyr sensor API. Use it to exercise the hwmon_i2c -> sysfs
+	  *_input -> IntelCPUSensor dbus path without a real Intel CPU connected.
+	  Enable only for testing; keep off in production.
+
+config SENSOR_INTEL_PECI
+	bool "Real Intel PECI CPU temperature/power/DIMM sensor"
+	depends on PECI
+	default n
+	help
+	  The real counterpart of FAKE_PECI_CPUTEMP. Reads DTS / Margin / Package
+	  power / DRAM power / DIMM A1 / DIMM B1 from an Intel CPU over PECI
+	  and exposes them via the Zephyr sensor API so hwmon_i2c + IntelCPUSensor
+	  work without any code changes.
+
+	  All six rails, including DIMM A1 / DIMM B1, are sourced from PECI:
+	  the CPU's integrated memory controller (IMC) monitors the DIMM
+	  thermistors itself and reports per-channel DIMM temperatures through
+	  the PECI memory-thermal domain (RdPkgCfg with a memory-domain index,
+	  or RdIAMSR for some platforms). The DIMM slot SMBus is reserved for
+	  SPD / PMBus access and is NOT the temperature source.
+
+	  Enable directly in prj.conf (NOT through a -D...=y build flag -- the
+	  build flag is reserved for fake self-test sensors). When set, the
+	  matching DT overlay (lsqsh_evb_cpu1_intel_peci.overlay) is applied
+	  automatically and the SoC's &peci1/&peci2 nodes are enabled.
+
+	  Typical prj.conf snippet for production:
+
+	      CONFIG_PECI=y
+	      CONFIG_PECI_LS=y
+	      CONFIG_SENSOR_INTEL_PECI=y
+
+	  Mutually exclusive with FAKE_PECI_CPUTEMP.
+
 source "Kconfig.zephyr"
