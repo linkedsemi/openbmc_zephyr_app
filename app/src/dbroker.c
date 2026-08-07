@@ -373,9 +373,6 @@ retry:
         return -ENOTCONN;
     }
 
-    printk_thread("[DBroker API] Connected to broker via AF_UNIX: fd=%d",
-            client_fd);
-
     /* Set non-blocking for sd-bus */
     int flags = fcntl(client_fd, F_GETFL, 0);
     if (flags >= 0) {
@@ -441,7 +438,7 @@ retry:
     LOG_DBG("[DBroker API] Bus ready after %d attempts", retry_count);
 
     *bus = internal_bus;
-    printk_thread("connected to broker\n");
+    printk_thread("Connected to broker: fd=%d", client_fd);
 
     return 0;
 }
@@ -452,7 +449,7 @@ int disconnect_from_dbroker(sd_bus *bus)
         return -EINVAL;
     }
 
-    printk_thread("[sd-bus] Disconnecting from dbus-broker...");
+    // printk_thread("[sd-bus] Disconnecting from dbus-broker...");
 
     /*
      * sd_bus_flush_close_unref does all the work:
@@ -472,7 +469,7 @@ int disconnect_from_dbroker(sd_bus *bus)
     k_msleep(50);
     sd_bus_unref(bus);
 
-    printk_thread("[sd-bus] Disconnected successfully");
+    // printk_thread("[sd-bus] Disconnected from broker");
     return 0;
 }
 
