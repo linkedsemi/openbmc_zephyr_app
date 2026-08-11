@@ -6,13 +6,13 @@ manifest:
   projects:
     - name: zephyr
       remote: linkedsemi
-      revision: 1fd1da074ab6f74f7cbdee766032bdb0c173ce10
+      revision: 4a3ea1421adb02199b141f9ba5b67f300f6df5ff
       import:
         name-allowlist:
           - fatfs
           - littlefs
     - name: ls_sdk
-      revision: 240db145d57a5890938e922b636306d74e82d60c
+      revision: b80ccfdbcca3a29e20598343fb1ba5bdded212af
       remote: linkedsemi
       path: modules/hal/linkedsemi
       groups:
@@ -31,10 +31,10 @@ manifest:
       revision: fe25b4ef99eccb63ceec62f9948b6325dc279099
       remote: linkedsemi
       path: modules/lib/wolfssh
-    - name: zephyr-devfs
-      revision: 803895eb210af4dd14ab6559b47d38447abd80fe
-      remote: linkedsemi
-      path: modules/zephyr-devfs
+    # - name: zephyr-devfs
+    #   revision: 803895eb210af4dd14ab6559b47d38447abd80fe
+    #   remote: linkedsemi
+    #   path: modules/zephyr-devfs
     - name: safeclib
       revision: 4e279a5254d7e443e3659fec95cf25ceaa4c8a27
       remote: linkedsemi
@@ -44,66 +44,106 @@ manifest:
       remote: linkedsemi
       path: modules/jtag_asd
     - name: basu
-      revision: 0aa6338cdc4cb218569cd6624c67ee87c0c5021b
+      revision: f876f74be679ff4f11d3548c07251351d449833c
       remote: linkedsemi
       path: modules/lib/basu
     - name: dbus-broker
-      revision: 7d02400f6969125740b9a7165050c08f892f8927
+      revision: 19e3b41cdf1e7b4b65eb670451e3b2e18f671f6e
       remote: linkedsemi
       path: modules/lib/dbus-broker
     - name: nlohmann_json
-      revision: 492e14345e797fe7f984bd936e0fcb6714f7791d
+      revision: 21d6a8608dd486b3bdc69b5f3f36f4c2e32ea462
       remote: linkedsemi
       path: openbmc/nlohmann_json
     - name: phosphor-host-ipmid
-      revision: 61d3806270770e518b399d735b054a5dbb15c071
+      revision: 3bc7e2ee0d68e5e9d06b5e81125d2f8a8627605c
       remote: linkedsemi
       path: openbmc/phosphor-host-ipmid
     - name: boost
-      revision: 6c97e236d49a927b2b37c006647c7f3a84af7be4
+      revision: 50b7cdb37842bb88ab9e55cb69d78526e19ec64f
       remote: linkedsemi
       path: openbmc/boost
     - name: sdeventplus
-      revision: 0b6195925e74737350fb597ca1f713e9188d92b8
+      revision: b08defd63ee0cc1272ab325254607e02b27fb972
       remote: linkedsemi
       path: openbmc/sdeventplus
     - name: stdplus
-      revision: a3377cd41359f5992caa82509fb66d73b4a031ff
+      revision: e7e5ac6c2a5b0a7abdfca49fa8bdeea58451292d
       remote: linkedsemi
       path: openbmc/stdplus
     - name: fmt
-      revision: 5d997b647ca90a524acaf1201f7ebfb4a4c1264b
+      revision: 7efd053646053b98a7b4426e89f9661ba0de20e1
       remote: linkedsemi
       path: openbmc/fmt
     - name: function2
-      revision: 75f310a0d92c15ae5386c10dd4a6884d9d0465e2
+      revision: c06f8813e86649f7400046a25994d462fe5ff7b9
       remote: linkedsemi
       path: openbmc/function2
     - name: sdbusplus
-      revision: fc834d0882c19c9b13568deeaa2226634e3c397d
+      revision: ec085074a13fc5d16be7da2204bca05c11da58a3
       remote: linkedsemi
       path: openbmc/sdbusplus
     - name: phosphor-logging
-      revision: 7e36578098f0cb73ed5d8def95c7a437e937aa6d
+      revision: bf1f1fa660d15eff612d0c05716417cd3fa3eb83
       remote: linkedsemi
       path: openbmc/phosphor-logging
     - name: phosphor-dbus-interfaces
-      revision: e0e76dc4e130f306d95ca5617f2f37c76eccf122
+      revision: b9c6138f7646f4cd10374600386552bf905eb68d
       remote: linkedsemi
       path: openbmc/phosphor-dbus-interfaces
     - name: phosphor-objmgr
-      revision: 260c0b9645237ab98c8fb88e030ab94c45492c0a
+      revision: 7d4eb7772eb67e8a57bb9dab55dfcbd362e3c6bb
       remote: linkedsemi
       path: openbmc/phosphor-objmgr
     - name: zephyr-osal
-      revision: 019c93ff1bb502dc99893b75c8f31ce63f762787
+      revision: 47fe85a8680038272ac783a4ce8f4cdcb51b40a6
       remote: linkedsemi
       path: openbmc/zephyr-osal
     - name: tinyxml2
-      revision: 3ed7be2e5c44bbd18bc05314ea9f1fa5c915e3aa
+      revision: 19970f901fc80455e6fb5c15c26c197a6219578d
       remote: linkedsemi
       path: openbmc/tinyxml2
     - name: phosphor-net-ipmid
-      revision: 89f16a1fd8e52124b7d0a95a85a72b2f7572d5e2
+      revision: 245cd64dec52e85913267071df907d8395189934
       remote: linkedsemi
       path: openbmc/phosphor-net-ipmid
+    # - name: openbmc_zephyr_app
+    #   revision: eb0ef47c29d76dd9d35fd6cff60793547dfc436a
+    #   remote: linkedsemi
+    #   path: openbmc/openbmc_zephyr_app
+    - name: valijson
+      revision: 94adf049ae196e127f3df0c18a1fefec9aa91ffd
+      remote: linkedsemi
+      path: openbmc/valijson
+    - name: entity-manager
+      revision: 59ce59d07fd38f5b2f54146d07becaf25099ff8e
+      remote: linkedsemi
+      path: openbmc/entity-manager
+    - name: i2c-tools
+      revision: 316c044239a30e51aa171d4ab5ad938b7dd6eec0
+      remote: linkedsemi
+      path: openbmc/i2c-tools
+    - name: mk-rofs
+      revision: 47f14f1f5f232d3b96e0bf99572ea8212fb1f010
+      remote: linkedsemi
+      path: openbmc/mk-rofs
+    - name: ipmitool
+      revision: 348a9a2c2eca19835b41c5df4b0fdd463bbb4be1
+      remote: linkedsemi
+      path: openbmc/ipmitool
+    - name: kcsbridge
+      revision: c75e6c1a14152f822f769fd8a38f691390cbfa2e
+      remote: linkedsemi
+      path: openbmc/kcsbridge
+    - name: zephyr-devfs
+      revision: ede8e85bfddb711e1cf8484a6103e5c7550b21e6
+      remote: linkedsemi
+      path: openbmc/zephyr-devfs
+    - name: dbus-sensors
+      revision: 51674c7df366bb61a6c273c3ee911bf6906637c3
+      remote: linkedsemi
+      path: openbmc/dbus-sensors
+    - name: libgpiod
+      revision: a75d5b0ff8d1554dd5bc5c78c2892b5d58dc28da
+      remote: linkedsemi
+      path: openbmc/libgpiod

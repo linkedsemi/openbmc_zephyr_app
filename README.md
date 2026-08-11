@@ -1,12 +1,12 @@
-# **LS1020 OpenBMC 20260424 版本发布说明**
+# **LS1020 OpenBMC 20260811 版本发布说明**
 
 ## 概述
 
-#### 本次版本发布，在凌思微基板管理控制芯片（Lite-BMC） **LS1020** 上提供了基础的 OpenBMC 功能。用户可以使用ipmid工具等方式给 BMC 发送指令，执行指定操作或进行状态查询等任务。
+#### OpenBMC Zephyr SDK 是基于 Zephyr RTOS 的 OpenBMC 软件运行环境，在资源受限的 BMC SoC 上实现 OpenBMC 核心功能栈：D-Bus 消息总线、sdbusplus/basu 通信库、phosphor-logging 日志框架、entity-manager 配置管理、dbus-sensors 传感器采集，以及 host-ipmid / net-ipmid / KCS 桥接等 BMC 管控通道。
 
-#### 当前版本还不支持文件系统，只提供了 OpenBMC 的 host-ipmid 和 net-ipmid 两个应用的基本功能。
+#### 本次版本发布，在凌思微基板管理控制芯片（Lite-BMC） **LS1020** 的 2026-04-24 软件基线之上，新增了**文件系统**、**传感器采集**、**配置管理**、**KCS 桥接**以及若干支撑库，还加入了在 BMC shell 上可执行的 **busctl** 和 **ipmi** 等指令，形成可实际采集传感器、可经 IPMI/KCS 与主机及网络交互的较完整 BMC 软件栈。
 
-#### 目前 OpenBMC 包含的模块如下：
+#### 本次版本发布包含的核心 OpenBMC 模块如下：
 
 > - phosphor-host-ipmid 
 >
@@ -15,6 +15,13 @@
 > - phosphor-objmgr
 >
 > - phosphor-dbus-interfaces
+>
+> - phosphor-entity-manager
+>
+> - phosphor-dbus-sensors
+>
+> - phosphor-logging
+>
 
 ## 软件架构
 
@@ -23,60 +30,67 @@
 ##### OpenBMC 模块组成结构图
 ```ts
 ├─ 上层业务应用（用户功能层）
-│  ├─ phosphor-host-ipmid       # 主机本地IPMI（KCS/BT接口）
-│  ├─ phosphor-net-ipmid        # 远程网络IPMI（RMCP+）
-│  ├─ phosphor-logging          # SEL/ELOG/Redfish事件日志
-│  └─ phosphor-objmgr           # Phosphor Object Manager
+│  ├─ phosphor-host-ipmid       # 主机本地 IPMI（KCS/BT接口）
+│  ├─ phosphor-net-ipmid        # 远程网络 IPMI（RMCP+）
+│  ├─ kcsbridge                 # 主机 KCS 桥接（KCS 报文经 D-Bus 转发至 IPMI 服务）
+│  ├─ dbus-sensors              # 传感器采集（HwmonTemp/PSUSensor/IntelCPU/ADC/Fan/Intrusion/External）
+│  ├─ entity-manager            # FRU/传感器/机箱配置管理（含 fru-device）
+│  ├─ phosphor-logging          # SEL/ELOG/Redfish 事件日志
+│  └─ phosphor-objmgr           # 对象管理器（接口聚合、属性缓存）
 ├─ 核心中间件层（IPC+事件驱动）
-│  ├─ phosphor-dbus-interfaces  # D-Bus接口YAML标准定义
-│  ├─ sdbusplus                 # C++ D-Bus封装（生成工具+客户端/服务端）
+│  ├─ phosphor-dbus-interfaces  # D-Bus 接口YAML标准定义
+│  ├─ sdbusplus                 # C++ D-Bus 封装（生成工具+客户端/服务端）
 │  ├─ D-Bus协议栈
-│  │  └─ basu                   # 无systemd精简版sd-bus（兼容API）
+│  │  └─ basu                   # 无 systemd 精简版 sd-bus（兼容API）
 │  ├─ 事件循环核心
-│  │  └─ sd-eventplus           # 异步IO/定时器/信号/子进程管理
+│  │  └─ sdeventplus            # 异步IO/定时器/信号/子进程管理
 │  └─ 总线守护进程
-│     └─ dbus-broker            # 高性能D-Bus路由（替代dbus-daemon）
+│     └─ dbus-broker            # 高性能 D-Bus 路由（替代dbus-daemon）
 ├─ 通用基础依赖层（全模块共用）
 │  ├─ C++通用工具库
 │  │  ├─ boost                  # 异步IO/线程/容器/序列化
-│  │  ├─ stdplus                # C++标准库增强（嵌入式适配）
+│  │  ├─ stdplus                # C++ 标准库增强（嵌入式适配）
 │  │  ├─ function2              # 高效函数绑定/回调
 │  │  ├─ fmt                    # 日志/字符串格式化
-│  │  ├─ nlohmann_json          # JSON解析/序列化
-│  │  └─ tinyxml2               # 轻量XML解析
+│  │  ├─ nlohmann_json          # JSON 解析/序列化
+│  │  └─ tinyxml2               # 轻量 XML 解析
 │  ├─ RTOS&系统抽象
-│  │  ├─ zephyr                 # Zephyr RTOS内核
+│  │  ├─ zephyr                 # Zephyr RTOS 内核
 │  │  ├─ zephyr-osal            # 跨OS抽象层（Linux/Zephyr适配）
-│  │  └─ zephyr-devfs           # Zephyr设备文件系统抽象
+│  │  ├─ zephyr-devfs           # Zephyr设备文件系统抽象（hwmon_xxx/gpio/i2c等）
+│  │  └─ libgpiod / i2c-tools   # GPIO/i2c 工具库（传感器外设访问）
 │  └─ 芯片平台BSP
-│     ├─ linkedsemi             # 凌思微BMC SoC驱动BSP
-│     └─ ls_sdk                 # LS系列芯片底层 SDK
+│     ├─ linkedsemi             # 凌思微 BMC SoC 驱动 BSP
+│     └─ ls_sdk                 # LS 系列芯片底层 SDK
 └─ 安全&运维层（底层支撑）
    ├─ 加密通信
-   │  ├─ mbedtls                # 轻量嵌入式TLS（HTTPS/IPMI加密）
-   │  └─ wolfssl                # 高性能TLS（国密/FIPS/量子安全）
+   │  ├─ mbedtls                # 轻量嵌入式 TLS（HTTPS/IPMI加密）
+   │  └─ wolfssl                # 高性能 TLS（国密/FIPS/量子安全）
    ├─ 安全远程运维
-   │  └─ wolfssh                # 嵌入式SSH/SOL/SFTP
+   │  └─ wolfssh                # 嵌入式 SSH/SOL/SFTP
    ├─ 代码安全
    │  └─ safeclib               # C标准库安全加固（防缓冲区溢出）
-   └─ 硬件调试
-      └─ jtag_asd               # BMC远程JTAG调试（CPU/BIOS排障）
+   ├─ 硬件调试
+   │  └─ jtag_asd               # BMC远程JTAG调试（CPU/BIOS 排障）
+   └─ 文件系统工具
+      ├─ mk-rofs                # 只读文件系统镜像制作
+      └─ valijson               # JSON Schema 校验（entity-manager配置）
 ```
 ##### OpenBMC 核心业务模块依赖关系图
 ```ts
-├─ phosphor-host-ipmid  # 顶层业务：主机本地IPMI
-│  ├─ sdbusplus          # D-Bus C++封装（核心通信）
-│  │  ├─ nlohmann_json   # JSON解析（数据序列化）
-│  │  └─ basu            # 精简sd-bus协议栈（底层通信）
-│  ├─ sdeventplus        # 事件循环封装（异步IO/定时器）
-│  │  ├─ sdbusplus       # 依赖D-Bus通信
+├─ phosphor-host-ipmid  # 顶层业务：主机本地 IPMI
+│  ├─ sdbusplus          # D-Bus C++ 封装（核心通信）
+│  │  ├─ nlohmann_json   # JSON 解析（数据序列化）
+│  │  └─ basu            # 精简 sd-bus 协议栈（底层通信）
+│  ├─ sdeventplus        # 事件循环封装（异步IO / 定时器）
+│  │  ├─ sdbusplus       # 依赖 D-Bus 通信
 │  │  │  ├─ nlohmann_json
 │  │  │  └─ basu
-│  │  └─ stdplus         # C++标准库增强
+│  │  └─ stdplus         # C++ 标准库增强
 │  │     ├─ function2    # 函数绑定/回调
 │  │     └─ fmt          # 字符串/日志格式化
-│  ├─ phosphor-dbus-interfaces  # D-Bus接口标准定义
-│  │  └─ sdbusplus       # 依赖D-Bus封装
+│  ├─ phosphor-dbus-interfaces  # D-Bus 接口标准定义
+│  │  └─ sdbusplus       # 依赖 D-Bus 封装
 │  │     ├─ nlohmann_json
 │  │     └─ basu
 │  ├─ phosphor-logging   # 故障日志上报
@@ -87,23 +101,53 @@
 │  │  │  ├─ sdbusplus
 │  │  │  └─ stdplus
 │  │  └─ sdbusplus
-│  ├─ nlohmann_json      # 直接依赖：JSON数据处理
+│  ├─ nlohmann_json      # 直接依赖：JSON 数据处理
 │  └─ boost              # 直接依赖：通用工具库（序列化/容器）
-└─ phosphor-net-ipmid   # 顶层业务：远程网络IPMI
-   ├─ boost              # 通用工具支撑
-   ├─ phosphor-dbus-interfaces  # D-Bus接口标准定义
-   │  └─ sdbusplus
-   │     ├─ nlohmann_json
-   │     └─ basu
-   ├─ phosphor-logging   # 故障日志上报
+├─ phosphor-net-ipmid   # 顶层业务：远程网络 IPMI
+│  ├─ boost              # 通用工具支撑
+│  ├─ phosphor-dbus-interfaces  # D-Bus 接口标准定义
+│  │  └─ sdbusplus
+│  │     ├─ nlohmann_json
+│  │     └─ basu
+│  ├─ phosphor-logging   # 故障日志上报
+│  │  ├─ nlohmann_json
+│  │  ├─ phosphor-dbus-interfaces
+│  │  ├─ sdeventplus
+│  │  └─ sdbusplus
+│  ├─ phosphor-objmgr    # D-Bus 对象管理（专属依赖）
+│  └─ sdbusplus          # D-Bus C++ 封装
+│     ├─ nlohmann_json
+│     └─ basu
+├─ kcsbridge            # 顶层业务：主机 KCS 桥接
+│  ├─ sdbusplus          # D-Bus C++ 封装（报文经 D-Bus 转发）
+│  │  ├─ nlohmann_json
+│  │  └─ basu
+│  ├─ phosphor-host-ipmid # 依赖主机 IPMI 服务处理命令
+│  │  └─ sdbusplus
+│  ├─ phosphor-logging   # 日志上报
+│  │  └─ sdbusplus
+│  └─ sdeventplus        # 事件循环
+│     └─ stdplus
+├─ entity-manager       # 顶层业务：配置管理（含 fru-device）
+│  ├─ sdbusplus          # D-Bus C++ 封装
+│  │  ├─ nlohmann_json
+│  │  └─ basu
+│  ├─ phosphor-objmgr    # 对象管理（配置注册）
+│  ├─ phosphor-logging   # 日志上报
+│  ├─ valijson           # JSON Schema 校验
+│  └─ sdeventplus        # 事件循环
+│     └─ stdplus
+└─ dbus-sensors         # 顶层业务：传感器采集
+   ├─ sdbusplus          # D-Bus C++ 封装（暴露传感器对象）
    │  ├─ nlohmann_json
-   │  ├─ phosphor-dbus-interfaces
-   │  ├─ sdeventplus
+   │  └─ basu
+   ├─ sdeventplus        # 事件循环（io_context 驱动）
+   │  └─ stdplus
+   ├─ zephyr-devfs       # hwmon_general/hwmon_adc/hwmon_pwm_tach 等 sysfs 驱动（读取硬件）
+   ├─ libgpiod / i2c-tools  # GPIO/i2c外设访问
+   ├─ entity-manager     # 依赖配置（传感器/FRU 定义）
    │  └─ sdbusplus
-   ├─ phosphor-objmgr    # D-Bus对象管理（专属依赖）
-   └─ sdbusplus          # D-Bus C++封装
-      ├─ nlohmann_json
-      └─ basu
+   └─ phosphor-logging   # 日志上报
 ```
 #### 各模块代码仓库拉取的地址，详见项目启动仓库中的 west.yml
 
@@ -112,10 +156,11 @@
 官方文档请参考：[https://docs.zephyrproject.org/latest/develop/getting_started/index.html]
 
 #### 一、需要下载交叉编译工具链
-[https://github.com/linkedsemi/xuantie-900-gcc-elf-newlib-x86_64-v3.0.1/tree/zephyr]
+[https://github.com/linkedsemi/xuantie-900-gcc-elf-newlib-x86_64-v3.0.1/tree/dbus-ipmi-v1]
 
 ```jsx
 指定交叉编译器
+export PATH=$PATH:<你的path>Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin
 export ZEPHYR_TOOLCHAIN_VARIANT=cross-compile
 export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/riscv64-unknown-elf-
 ```
@@ -136,14 +181,15 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
 
 2. 创建工作区目录,拉取项目启动仓库
 ```jsx
-   mkdir  <你的path>/zephyr_work [工作区目录]
-   cd     <你的path>/zephyr_work [工作区目录]
+   mkdir <你的path>/[工作区目录]
+   cd [工作区目录]
    git clone -b dbus-ipmi-v1 git@github.com:linkedsemi/openbmc_zephyr_app.git 或
    git clone -b dbus-ipmi-v1 https://github.com/linkedsemi/openbmc_zephyr_app.git
 ```
 
 3. 初始化仓库
 ```jsx
+   cd [工作区目录]
    python3 -m venv openbmc_zephyr_app/.venv
    source openbmc_zephyr_app/.venv/bin/activate
    pip install west
@@ -158,12 +204,11 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
 
 4. 检查环境变量
 ```jsxx
+   > cd [工作区目录]
    > 使用 `env |grep zephyr` 查看环境变量：
-      ZEPHYR_BASE=[工作区目录]/zephyr
-      BOARD_ROOT=[工作区目录]/zephyr
-      PWD=[工作区目录]/linkedsemi_zephyr_project
+      ZEPHYR_BASE=[工作区目录]/zephyr - 如没有，可暂时忽略或可以在.bashrc中添加
+      PWD=[工作区目录]
       VIRTUAL_ENV=[工作区目录]/openbmc_zephyr_app/.venv
-
    > 使用 `env |grep com` 和 `env |grep COM` 查看交叉编译器的环境变量：
       ZEPHYR_TOOLCHAIN_VARIANT=cross-compile
       CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/riscv64-unknown-elf-
@@ -172,93 +217,179 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
 #### 三、编译和烧录
 ```jsx
    > 编译openbmc：
-      cd [工作区目录]
-      west build -p auto -b lsqsh_evb@1os_xip/lsqsh/cpu1 openbmc_zephyr_app/app
+      - cd [工作区目录]
+      - west build -p auto -b lsqsh_evb@1os_xip/lsqsh/cpu1 openbmc/openbmc_zephyr_app/app
 
    > 烧录openbmc：
-      使用FlashProgrammer或flash命令，烧录[工作区目录]/build/zephyr/下编译生成的zephyr_flash_bram_xip_lsqsh_evb_1os_xip_lsqsh_cpu1.bin
+      - 新版本需要烧录二进制程序和配置文件，使用 cklink 烧录时间较长。所以新版本使用 tftp 应用烧录程序和 json 配置文件
+      - 搭建好 tfpt server，或者下载 tftp64 工具，把要烧录的文件拷贝放进 tftp server 的 Current Directory 里面
+         - 配置文件：[工作区目录]/build/rofs_bin/flash_rofs.bin
+         - 二进制程序：[工作区目录]/build/zephyr/zephyr_flash_bram_xip_lsqsh_evb_1os_xip_lsqsh_cpu1.bin
+      - 使用传统方式（FlashProgrammer或flash命令）烧录 zephyr_flash_lsqsh_evb_1os_lsqsh_cpu1.bin，让 zephyr 能够启用 tftpc 去 server下载文件：
+         - [工作区目录]/openbmc_zephyr_app/zephyr_flash_lsqsh_evb_1os_lsqsh_cpu1.bin
+      - 烧录之后复位，串口打印看到 "success"
+      - 使用网线连接电脑网口与BMC网口，配置电脑以太网的IPv4地址在 192.0.2.x 局域网段，比如：192.0.2.3
+      - 在串口执行下面的命令：
+         tftpc init 192.0.2.3 69;tftpc get_flashcp zephyr_flash_bram_xip_lsqsh_evb_1os_xip_lsqsh_cpu1.bin qspi@40000000 0x0;tftpc get_flashcp flash_rofs.bin qspi@40000000 0xD00000;
+      - 看到两个文件的 "verify pass" 后复位 （kernel reboot 或者 power cycle），程序烧录、启动成功
 ```
 
-## ipmid应用使用说明
+## 应用使用说明
 
-#### 一、host ipmid
+#### 一、应用配置
 ```jsx
-1. host启动配置
+1. 启动配置
 
-   编译宏：       [prj.conf]
+   编译宏：[具体参考 openbmc_zephyr_app/app/prj.conf]
       CONFIG_OPENBMC_PHOSPHOR_HOST_IPMID=y
+      CONFIG_OPENBMC_PHOSPHOR_NET_IPMID=y
+      CONFIG_OPENBMC_PHOSPHOR_OBJMGR=y
+      CONFIG_OPENBMC_PHOSPHOR_LOGGING=y
+      CONFIG_OPENBMC_PHOSPHOR_DBUS_INTERFACES=y
+      CONFIG_OPENBMC_ENTITY_MANAGER=y
+      CONFIG_OPENBMC_DBUS_SENSORS=y
+      CONFIG_OPENBMC_IPMITOOL=y
+      CONFIG_OPENBMC_KCSBRIDGE=y
+      CONFIG_BASU=y
+      CONFIG_DBUS_BROKER=y
+      ......
 
-   启动线程控制宏：[task_enable.hpp]
+   启动线程控制宏：[具体参考 openbmc_zephyr_app/app/src/task_enable.hpp]
+      #define ENABLE_DBUS_BROKER
+      #define ENABLE_OPENBMC_PHOSPHOR_OBJMGR
       #define ENABLE_OPENBMC_PHOSPHOR_HOST_IPMID
+      #define ENABLE_OPENBMC_PHOSPHOR_NET_IPMID
+      #define ENABLE_OPENBMC_KCSBRIDGE
+      #define ENABLE_OPENBMC_PHOSPHOR_LOGGING
+      #define ENABLE_OPENBMC_DBUS_SENSORS_ADC
+      #define ENABLE_OPENBMC_DBUS_SENSORS_EXTERNAL
+      #define ENABLE_OPENBMC_DBUS_SENSORS_FAN
+      #define ENABLE_OPENBMC_DBUS_SENSORS_HWMON_TEMP
+      #define ENABLE_OPENBMC_DBUS_SENSORS_INTELCPU
+      #define ENABLE_OPENBMC_DBUS_SENSORS_INTRUSION
+      #define ENABLE_OPENBMC_DBUS_SENSORS_PSU
+      #define ENABLE_OPENBMC_ENTITY_MANAGER
+      #define ENABLE_OPENBMC_FRU_DEVICE
+      ......
 
-   线程栈分配：    [task_def.hpp]
-      IPMI_THREAD_STACK_SIZE - 32K
-      IPMID_TEST_STACK_SIZE  - 32K
+   线程栈分配：[具体参考 openbmc_zephyr_app/app/src/task_def.hpp]
+      大部分应用分配 32K，少数应用分配 16K/20K/64K
 
    线程优先级：
-      ipmid_main 线程优先级： 继承创建线程的优先级     [0]
-      ipmid_test 线程优先级： CONFIG_THREAD_PRI_TEST [5]
+      dbus-broker优先级： [0]
+      其他应用线程优先级： [4]
 
    依赖关系：
-      dbus-broker 需要先于 host ipmid 完成启动
+      dbus-broker 需要先于其他应用线程完成启动
+      其他依赖关系参考：[openbmc_zephyr_app/app/src/main.cpp]
 
 2. 应用入口函数：
 
-   ipmid_main()   [phosphor-host-ipmid/ipmid-new.cpp]
-
-3. 测试方法：
-
-   ipmid_test()   [phosphor-host-ipmid/zephyr/test.cpp]
-      指令参数：
-         uint8_t netFn = 6;
-         uint8_t lun = 0;
-         uint8_t cmd = 4;
-      调用host server的 ipmiAppGetSelfTestResults()
-   
-   目前 host ipmid 应用启动后会自动执行20次 self test 测试，并返回测试结果
-
-4. 已知问题：
-
-   - 未启用PAM账号密码管理
-
-   - 放行 execute 方法调用的权限通道检查
-
-   - chassishandler.cpp 中的全局变量 dbus，在需要时再去获取
-
-   - stdplus：fd 部分没有参与编译
-
-   - sd-journal 未实现  
-
-   - sd_id128_get_machine 的 ID 是设置固定的
+   dbus_broker_main()         [openbmc_zephyr_app/app/src/dbroker.c]
+   ipmid_main()               [phosphor-host-ipmid/ipmid-new.cpp]
+   net_ipmid_main()           [phosphor-net-ipmid/net_ipmi_main.cpp]
+   logging_main()             [phosphor-logging/log_manager_main.cpp]
+   objmgr_main()              [phosphor-objmgr/src/main.cpp]
+   entity_main()              [entity-manager/src/entity_manager.cpp]
+   fru_main()                 [entity-manager/src/fru_device.cpp]
+   adc_sensor_main()          [dbus-sensors/src/ADCSensorMain.cpp]
+   external_sensor_main()     [dbus-sensors/src/ExternalSensorMain.cpp]
+   fan_sensor_main()          [dbus-sensors/src/FanMain.cpp]
+   hwmon_temp_sensor_main()   [dbus-sensors/src/HwmonTempMain.cpp]
+   intel_cpu_sensor_main()    [dbus-sensors/src/IntelCPUSensorMain.cpp]
+   intrusion_sensor_main()    [dbus-sensors/src/IntrusionSensorMain.cpp]
+   psu_sensor_main()          [dbus-sensors/src/PSUSensorMain.cpp]
+   kcsbridge_main()           [kcsbridge/src/main.cpp]
+   busctl_main()              [modules/lib/basu/src/busctl/busctl.c]
+   ipmi_main()                [ipmitool/lib/ipmi_main.c]
+   ......
 ```
 
-#### 二、net ipmid
+#### 二、应用目前可用的控制指令
 ```jsx
-1. net启动配置
+1. BMC shell
+   除 kernel 相关指令外，BMC shell 还可以支持 busctl 指令和 ipmitool 指令， 例如：
+   1) busctl 指令：
+   busctl list
+   busctl status
+   busctl help
+   busctl tree
+   busctl monitor
+   busctl tree org.freedesktop.DBus
+   busctl introspect org.freedesktop.DBus /org/freedesktop/DBus
+   busctl call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus ListNames
 
-   编译宏：       [prj.conf]
-      CONFIG_OPENBMC_PHOSPHOR_NET_IPMID=y
+   busctl tree xyz.openbmc_project.Ipmi.Channel.eth0
+   busctl tree xyz.openbmc_project.Ipmi.Host
+   busctl introspect xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi
+   busctl call xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi xyz.openbmc_project.Ipmi.Server execute yyyaya{sv} 6 0 4 0 0
+   busctl call xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi xyz.openbmc_project.Ipmi.Server execute yyyaya{sv} 6 0 1 0 0
+   
+   busctl tree xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3
+   busctl introspect xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3
+   busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS clearAttention
+   busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS setAttention
+   busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS forceAbort
+   
+   busctl tree xyz.openbmc_project.HwmonTempSensor
+   busctl get-property xyz.openbmc_project.HwmonTempSensor /xyz/openbmc_project/sensors/temperature/fake_temp xyz.openbmc_project.Sensor.Value Value
+   
+   busctl tree xyz.openbmc_project.ExternalSensor
+   busctl introspect xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value
+   busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value Value d 25.6
+   busctl get-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value Value
+   
+   busctl tree xyz.openbmc_project.PSUSensor
+   busctl introspect xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Input_Voltage
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/Input_Voltage_1  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Input_Voltage  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Output_Voltage  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/fake_psu_Input_Power  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/fake_psu_Output_Power  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/current/fake_psu_Output_Current  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/fan_tach/fake_psu_Fan_Speed_1  xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/temperature/fake_psu_Temperature  xyz.openbmc_project.Sensor.Value Value
+   
+   busctl tree xyz.openbmc_project.IntrusionSensor
+   busctl get-property xyz.openbmc_project.IntrusionSensor /xyz/openbmc_project/Chassis/Intrusion xyz.openbmc_project.Chassis.Intrusion Status
+   busctl set-property xyz.openbmc_project.IntrusionSensor /xyz/openbmc_project/Chassis/Intrusion xyz.openbmc_project.Chassis.Intrusion Status s "Normal"
+   
+   busctl tree xyz.openbmc_project.IntelCPUSensor
+   busctl introspect xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/Margin_CPU0 xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DIMM_A1_CPU0 xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DIMM_B1_CPU0 xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/power/Cpu_Power_CPU0 xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/power/Dimm_Power_CPU0 xyz.openbmc_project.Sensor.Value Value
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalAlarmHigh
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.State.Decorator.OperationalStatus Functional
+   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.State.Decorator.Availability Available
 
-   启动线程控制宏：[task_enable.hpp]
-      #define ENABLE_OPENBMC_PHOSPHOR_NET_IPMID
+   busctl tree xyz.openbmc_project.FanSensor
+   busctl introspect xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control
+   busctl introspect xyz.openbmc_project.FanSensor  /xyz/openbmc_project/inventory
+   busctl introspect xyz.openbmc_project.FanSensor /xyz/openbmc_project/sensors
 
-   线程栈分配：    [task_def.hpp]
-      NET_IPMID_THREAD_STACK_SIZE     - 64K
-      NET_STACK_CFG_THREAD_STACK_SIZE - 16K
+   busctl tree xyz.openbmc_project.ADCSensor
+   busctl introspect xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_P1V8_AUX
+   busctl introspect xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_PVTT
+   busctl introspect   xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_PVDDQ
+   
+   2）ipmitool 指令：
+   ipmitool mc info
+   ipmitool sel info
+   ipmitool mc selftest
+   ipmitool fru print
+   ipmitool sensor list
+   ipmitool sdr list
+   ipmitool raw 6 1
+   ipmitool raw 6 4
+   ......
+   此外，BMC shell 还支持 fs ls，fs cat 等文件系统指令。还有 kernel heap，kernel thread stacks 等内核查询指令。具体可在 BMC shell 中 "help"
 
-   线程优先级：
-      net_ipmid_main 线程优先级： 继承创建线程的优先级     [0]
-      net_stack_cfg  线程优先级： 继承创建线程的优先级     [0]
-
-   依赖关系：
-      dbus-broker、host ipmid 和 net_stack_cfg 需要先于 net ipmid 完成启动
-
-2. 应用入口函数：
-
-   net_ipmid_main()   [phosphor-net-ipmid/net_ipmi_main.cpp]
-
-3. 测试方法：
-
+2. 带外测试指令：
    带外安装 ipmitool 工具 [可以使用Linux或者windows版本] 使用带外指令进行相关的验证。
 
    连接网线，ping 通 ip (目前 IP 地址默认是 192.0.2.13，也可以使用 zephyr shell 指令调整 IP 地址 )
@@ -277,14 +408,50 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
       其他
          ipmitool -I lanplus -H 192.0.2.13 -U admin -P bypass -C 17 raw 0x06 0x36
 
-4. 已知问题：
+3. 使用 shell 查看 sensor 的 sysfs 文件
+   > 查看 fan-sensor 的 pwm 和 fan 文件
+      fs cat /sys/class/hwmon/hwmon1/fan1_input
+      fs cat /sys/class/hwmon/hwmon2/fan2_input
+      fs cat /sys/class/hwmon/hwmon1/pwm1
+      fs cat /sys/class/hwmon/hwmon2/pwm2
+   
+   > 查询adc-sensor文件
+      fs cat /sys/class/hwmon/hwmon0/in1_input
 
-   - 由于目前缺少文件系统，net-ipmid 无法存储 cipher_list.json，目前看这会导致这些函数会根据会话协商的算法类型（如 HMAC_SHA1_96 或  AES_CBC_128）来创建对应的加解密对象。没有配置文件，系统无法确定该创建哪种对象，导致后续的业务报文（如 payloadType=0 的 IPMI 命令）因无法解密或校验失败而被丢弃。目前写死了支持SHA256即-C17使用的验证算法
-   
-   - 用户管理使用的应该是phosphor-user-manager，但目前尚未集成该模块，因此目前写死只要使用bypass密码，即可认为认证成功
-   
-   - 由于上面写死的一些更改以及目前lg2日志模块没有集成，导致目前时序可能受到影响，看到的现象是，如果调试时加入 printf 打印，则 rakp3 包能正常收到，不抛异常，整个 rcmp 的校验流程可以实现。但如果不加入，某些 ipmitool 工具在建立会话时，存在时序问题，ipmitool 在协商了非 NONE 的 integrity 后，会在 RAKP3 的 payloadType 上置 0x40 。BMC 在 unflatten 中需调用 getIntegrityAlgo() 校验，但完整性算法对象在 RAKP34 末尾的 applyIntegrityAlgo() 里晚于 RAKP3 入栈解析，导致 getIntegrityAlgo() 抛 Integrity Algorithm Empty（或等效失败），receive() 在到达 RAKP34 之前就返回。目前调整了 net-ipmid 的代码改了一下时序即这个对象的创建移动到了 rakp2 回包的时候（此时本地已具备校验的全部要素），而不是在rakp34的末端，暂时消除了这个问题，目前该问题还需要深入研究。
+   > 查询其他 sensor 的文件方法相同
+      查看目录：fs ls /sys/class/hwmon
+      查看文件内容：fs cat /sys/class/hwmon/......
 ```
+#### 三、应用已知问题和局限性
+```jsx
+1. host ipmid
+   - 未启用PAM账号密码管理
+   - chassishandler.cpp 中的全局变量 dbus，在需要时再去获取
+   - stdplus：fd 部分没有参与编译
+   - sd-journal 仅实现简单打印  
+   - sd_id128_get_machine 的 ID 是设置固定的
+
+2. net ipmid
+   - 用户管理使用的应该是phosphor-user-manager，但目前尚未集成该模块，因此目前写死只要使用bypass密码，即可认为认证成功
+
+3. entity manager
+   - fru-device里面使用的是默认的 baseboard.fru.bin，探测 fru 跳过 /sys/bus/i2c/devices/i2c- 的链接文件采取 i2c 探测 fru 的方式
+   - entity manager 里面 CurrentHostState() 暂时忽略，isPowerOnEntity() 返回 powerStatusOn
+
+4. dbus sensors
+   - dbus-sensors 目前未支持 4 类 sensor：机箱出风口（ExitAirTempSensor.cpp）、IPMB总线（IpmbSDRSensor.cpp、IpmbSensor.cpp）、BMC 自身 MCU/板载温度（MCUTempSensor.cpp）、NVMe 盘温度（NVMeBasicContext.cpp、NVMeSensor.cpp、NVMeSensorMain.cpp）
+   - fan-sensor 没有接入物理风扇，所以用 pa08 和 pg02 代替 tach，并且要将 pn12 和 pn13 与其连接，如果要接入风扇需要修改 lsqsh_evb_cpu1.overlay 里面的 cap 和 hwmon1
+
+5. kcs bridge
+   - kcs bridge 目前实现了在 BMC 侧的功能，自测函数可以从 epsi/lpc 的共享内存中自注入测试指令，触发回调函数。后续使用 kcs 方式进行带内通信/管理的时候，还需要正确配置主机（host）侧的设备树（如epsi/lpc等），还要确保主机侧加载正确的驱动，并能根据 kcs 状态机触发回调函数等
+
+6. HWMON
+   - ADC sensor 会使用 hwmon_adc - class 2
+   - Fan sensor 会使用 hwmon_pwm_tach - class 0
+   - 其他 sensor (ExternalSensor, HwmonTempSensor, PSUSensor, IntrusionSensor, IntelCPUSensor) 会使用 hwmon_general - class 5
+   - Hwmon 在设备树中的定义方法，请参考：zephyr/dts/bindings/hwmon/linkedsemi,hwmon.yaml
+```
+
 ## dbus-broker
 
 #### dbus-broker 是所有应用的核心依赖模块，其软件基本架构如下：
@@ -303,16 +470,14 @@ D-BUS BROKER ARCHITECTURE (Zephyr Implementation)
 │
 ├── 🔌 CONNECTION MANAGEMENT LAYER
 │   │
-│   ├── 🔄 Socketpool Mode (CONFIG_DBUS_BROKER_SOCKETPOOL)
-│   │   ├── socketpool_init() - Pre-allocate socketpairs as a pool
-│   │   ├── socketpool_allocate() - Get client_fd & broker_fd from the pool
-│   │   ├── socketpool_add_peer_to_broker() - Register peer
-│   │   └── socketpool_free() - Return to pool
-│   │
-│   └── 🌐 INET Socket Mode (CONFIG_DBUS_BROKER_INET)    [obsolete]
-│       ├── create_listener_socket_with_retry() - TCP listener
-│       ├── bind(127.0.0.1:55555) - Listen on localhost
-│       └── accept() - Accept incoming connections
+│   └── 🔄 AF_UNIX Mode (CONFIG_NET_SOCKETS_AF_UNIX)
+│       ├── socketpair(AF_UNIX, SOCK_STREAM, 0, g_controller_fds) - create socketpair for dbus controller only
+│       ├── create_listener_socket() - socket() + bind() + listen() - create fd for listener socket, bind fd to address path, listen on fd
+│       └── add_listener_to_broker() - allocate listener rbtree node, bind listener fd to listener_dispatch() function
+│           └── listener_dispatch() - accept() client connection, peer_new_with_fd()
+│               ├── accept() - accept client connection with a new connection fd
+│               ├── peer_new_with_fd() - bind the connection fd with peer_dispatch() function
+│               └── peer_spawn() - open peer connection, selects the events on dispatch file
 │
 ├── 🏗️ DBROKER SUBSYSTEM (/zephyr/subsys/dbroker)
 │   │
@@ -321,11 +486,6 @@ D-BUS BROKER ARCHITECTURE (Zephyr Implementation)
 │   │   ├── standard_broker_deployment() - Setup broker
 │   │   ├── broker_thread_entry() - Dedicated broker thread
 │   │   └── g_controller_fds[2] - Controller socketpair
-│   │
-│   ├── socketpool.c - Socketpair pool management
-│   │   ├── struct socketpool_entry[] - Pool entries
-│   │   ├── k_mutex lock - Thread-safe allocation
-│   │   └── CONFIG_DBUS_BROKER_SOCKETPOOL_SIZE (default: 16)
 │   │
 │   └── include/dbus_broker.h - Public API declarations
 │
@@ -467,11 +627,11 @@ D-BUS BROKER ARCHITECTURE (Zephyr Implementation)
 │
 └── ⚙️ CONFIGURATION (Kconfig)
     ├── CONFIG_DBROKER - Enable D-Bus broker
-    ├── CONFIG_DBUS_BROKER_SOCKETPOOL vs INET - Connection mode
-    ├── CONFIG_DBUS_BROKER_SOCKETPOOL_SIZE - Pool size (default: 16)
-    ├── CONFIG_DBUS_BROKER_SOCKETPOOL_BUFFER_SIZE - Buffer (default: 4096)
-    ├── CONFIG_DBUS_BROKER_STACK_SIZE - Thread stack (default: 8192)
-    └── CONFIG_DBUS_BROKER_PRIORITY - Thread priority (default: 7)
+    ├── CONFIG_DBUS_BROKER - Select dbus-broker library
+    ├── DBUS_BROKER_THREAD_STACK_SIZE - dbus-broker thread stack size: 32KB
+    ├── CONFIG_NET_SOCKETS_AF_UNIX - Enable AF_UNIX socket
+    ├── CONFIG_NET_UNIX_BUFFER_SIZE - AF_UNIX buffer size: 2KB
+    └── CONFIG_NET_UNIX_MAX_SOCKETS - AF_UNIX connection limit: 64
 ```
 #### dbus-broker 用法
 ```jsx
@@ -487,13 +647,11 @@ example:
 ```
 #### 已知问题和局限性
 ```jsx
-1. 由于 Zephyr 对 Named Unix Domain Socket 的支持还不够充分，而 INET socket 模式需要大量网络栈资源开销，我们最终选择了轻量级的无名套接字（ Unamed Unix Domain Socket ）模式。使用socketpair() 创建一对 socket pair，一端作为客户端，另一端作为服务器端，进行通信。
+1. 本版本在 Zephyr 上增加了对 AF_UNIX 套接字通信的支持，包括 SOCK_STREAM 模式和 SOCK_DGRAM 模式。目前支持 64 个连接，每个连接的管道缓冲区大小是 2KB，采用静态数组的分配方式以避免内存碎片。dbus-broker与应用线程之间的通信已经切换为 AF_UNIX 连接，可以通过修改 CONFIG_NET_UNIX_MAX_SOCKETS 来调整连接数量，还可以通过修改 CONFIG_NET_UNIX_BUFFER_SIZE 改变缓冲区大小
 
-2. socketpair 目前预分配16个 socketpair，形成一个 socketpair pool，后续可以根据需要调整。每个应用连接 broker 时，会从 socketpair pool 中分配一个 socketpair。应用结束时应调用 disconnect_from_dbroker() 释放socketpair 资源。
+2. 由于目前 dbus-broker 与应用线程并不需要对套接字连接路径做深层搜索和查询，所以套接字路径并未采用虚拟文件系统方式，而是直接采用一个路径字符串作为通信地址条目。类似的，也可以采用抽象命名空间的方式
 
-3. 在对 socketpair 的某一端进行 pollout 或者 write 时，也会去拿远端的 semaphore，这可能会对同一时间在另一端的操作会造成阻塞，造成一定程度的性能损失。
-
-4. 目前不支持 policy、signal fd、SO_PEERSEC、 SO_PEERGROUPS、 SELinux，AppArmor，and credential
+3. 目前不支持 policy、signal fd、SO_PEERSEC、 SO_PEERGROUPS、 SELinux，AppArmor，and credential
 ```
 
 ## sd-event
