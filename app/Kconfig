@@ -159,4 +159,18 @@ config SENSOR_INTEL_PECI
 
 	  Mutually exclusive with FAKE_PECI_CPUTEMP.
 
+config OPENBMC_WEBUI_VUE
+	bool "Bundle webui-vue static assets into rofs"
+	default n
+	depends on MK_ROFS
+	help
+	  Copy the prebuilt webui-vue dist/ (openbmc/webui-vue/dist, produced
+	  by `npm run build` on a Node 16 host) into the littlefs rofs image at
+	  usr/share/www/. bmcweb serves these files as the BMC web UI.
+
+	  The dist ships gzipped (index.html.gz, app.*.js.gz, ...) because the
+	  2MB rofs cannot hold the ~2MB uncompressed build. bmcweb must serve
+	  them with Content-Encoding: gzip and MIME derived from the stripped
+	  (.gz) suffix (standard gzip_static behaviour).
+
 source "Kconfig.zephyr"

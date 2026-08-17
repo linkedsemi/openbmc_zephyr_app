@@ -129,6 +129,45 @@ if (CONFIG_ZEPHYRBMC_FILESYSTEM)
 zephyr_library_link_libraries(filesystem)
 endif()
 
+# ---------------------------------------------------------------------------
+# webui-vue static assets -> rofs (littlefs image, mounted under the web root)
+#
+# webui-vue is a browser SPA (Vue 2); only its prebuilt `dist/` is bundled.
+# The dist is produced on a host with Node 16:
+#     cd openbmc/webui-vue && npm install && npm run build
+# (CompressionPlugin must stay ENABLED so dist ships as .gz files; the 2MB
+#  rofs cannot hold the ~2MB uncompressed build.)
+#
+# Copied at CMake *configure* time into the rofs staging dir; mk-rofs later
+# packs ${CMAKE_BINARY_DIR}/configure_file/ into flash_rofs.bin.
+#
+#   rofs path : usr/share/www/
+#   web root  : CONFIG_FS_ROOT_OVERLAY "/usr/share/www/"
+#
+# bmcweb must serve the .gz files with Content-Encoding: gzip and MIME from
+# the stripped (.gz) suffix (standard gzip_static behaviour).
+# ---------------------------------------------------------------------------
+if(CONFIG_OPENBMC_WEBUI_VUE)
+  set(WEBUI_DIST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../webui-vue/dist"
+      CACHE PATH "Path to the prebuilt webui-vue dist/ directory")
+  if(NOT EXISTS "${WEBUI_DIST_DIR}")
+    message(FATAL_ERROR
+      "CONFIG_OPENBMC_WEBUI_VUE is set but '${WEBUI_DIST_DIR}' does not "
+      "exist.\n"
+      "Build the webui-vue frontend first on a host with Node 16:\n"
+      "  cd openbmc/webui-vue && npm install && npm run build\n"
+      "(Keep CompressionPlugin enabled so the dist is gzipped.)")
+  endif()
+  set(WEBUI_RDFS_DIR "${CMAKE_BINARY_DIR}/configure_file/usr/share/www")
+  file(MAKE_DIRECTORY ${WEBUI_RDFS_DIR})
+  # Copy the *contents* of dist/ into usr/share/www/ (the /. idiom copies
+  # directory contents, not the dist/ folder itself).
+  file(COPY "${WEBUI_DIST_DIR}/." DESTINATION ${WEBUI_RDFS_DIR})
+  # Re-run CMake if any dist file changes, so the copy stays in sync.
+  file(GLOB WEBUI_DIST_FILES "${WEBUI_DIST_DIR}/*")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${WEBUI_DIST_FILES})
+endif()
+
 zephyr_library_link_libraries(
 	dbus-broker
 	basu
