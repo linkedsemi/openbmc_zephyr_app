@@ -195,8 +195,8 @@ THREAD_DEFINE(bmcweb, bmcweb_init, bmcweb_ready_sem, "zbus_broker", "user_manage
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_BMC_CODE_MGT
-THREAD_DEFINE(software_updater, software_updater_init, software_updater_ready_sem, "zbus_broker", "objmgr");
-THREAD_DEFINE(image_manager, image_manager_init, image_manager_ready_sem, "zbus_broker", "objmgr");
+THREAD_DEFINE(software_updater, software_updater_init, software_updater_ready_sem, "dbus_broker", "objmgr");
+THREAD_DEFINE(image_manager, image_manager_init, image_manager_ready_sem, "dbus_broker", "objmgr");
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_SEL_LOGGER
@@ -444,8 +444,8 @@ int main(void)
     // k_sem_take(&net_config_init_ready_sem, K_SECONDS(20));
     // k_sleep(K_SECONDS(5));
 
-    //only use once at the first time to sue filesysem, or you need to add new jsonfile or path.
-    // config_fs_init();
+    // Only create code-mgt directories
+    config_fs_init();
 
     LOG_INF("Starting BMC application with dependency management...\n");
 

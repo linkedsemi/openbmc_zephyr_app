@@ -155,7 +155,7 @@ int software_updater_init();
 extern struct k_sem software_updater_ready_sem;
 
 #define CONFIG_THREAD_PRI_IMAGE 10
-#define IMAGE_THREAD_STACK_SIZE (20 * 1024)
+#define IMAGE_THREAD_STACK_SIZE (32 * 1024)
 int image_manager_init();
 extern struct k_sem image_manager_ready_sem;
 
@@ -226,7 +226,7 @@ int systemd_networkd_init();
 extern struct k_sem systemd_networkd_ready_sem;
 
 #define CONFIG_THREAD_PRI_ENTITY 10
-#define ENTITY_MANAGER_THREAD_STACK_SIZE (20 * 1024)
+#define ENTITY_MANAGER_THREAD_STACK_SIZE (32 * 1024)
 int entity_manager_init();
 extern struct k_sem entity_manager_ready_sem;
 

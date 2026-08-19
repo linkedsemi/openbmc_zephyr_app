@@ -846,51 +846,61 @@ int config_fs_init(void)
 {
     int ret;
 
-    printk("Initializing filesystem config...\n");
+    // printk("Initializing filesystem config...\n");
 
     /* List current filesystem contents */
-    lsdir_recursive("/SD2:");
+    // lsdir_recursive("/SD2:");
     // fs_rm_rf("/SD2:/var");
     // fs_rm_rf("/SD2:/run");
     // fs_rm_rf("/SD2:/usr");
+    // fs_rm_rf("/SD2:/tmp");
+    // fs_rm_rf("/SD2:/data1");
+    // fs_rm_rf("/SD2:/images");
+    // fs_rm_rf("/SD2:/phosphor-bmc-code-mgt");
     // lsdir_recursive("/SD2:");
 
     /* Write default IPMI configuration files (idempotent) */
-    ret = write_config(dev_id_path, devid_json);
-    if (ret < 0) {
-        return ret;
-    }
+    // ret = write_config(dev_id_path, devid_json);
+    // if (ret < 0) {
+    //     return ret;
+    // }
 
-    ret = write_config(channel_config_path, channel_config_json);
-    if (ret < 0) {
-        return ret;
-    }
+    // ret = write_config(channel_config_path, channel_config_json);
+    // if (ret < 0) {
+    //     return ret;
+    // }
 
-    ret = write_config(channel_access_path, channel_access_json);
-    if (ret < 0) {
-        return ret;
-    }
+    // ret = write_config(channel_access_path, channel_access_json);
+    // if (ret < 0) {
+    //     return ret;
+    // }
 
-    ret = write_config(cipher_list_path, cipher_list_json);
-    if (ret < 0) {
-        return ret;
-    }
+    // ret = write_config(cipher_list_path, cipher_list_json);
+    // if (ret < 0) {
+    //     return ret;
+    // }
 
-    ret = write_config(cs_privilege_levels_path, cs_privilege_levels_json);
-    if (ret < 0) {
-        return ret;
-    }
+    // ret = write_config(cs_privilege_levels_path, cs_privilege_levels_json);
+    // if (ret < 0) {
+    //     return ret;
+    // }
 
     /* Create runtime directories */
     // phosphor-host-ipmid
-    mkdir_dir("/SD2:/var/lib/ipmi");
-    mkdir_dir("/SD2:/run/ipmi");
-    mkdir_dir("/SD2:/usr/share/ipmi-providers");
+    // mkdir_dir("/SD2:/var/lib/ipmi");
+    // mkdir_dir("/SD2:/run/ipmi");
+    // mkdir_dir("/SD2:/usr/share/ipmi-providers");
 
-    //phosphor-logging
-    mkdir_dir("/SD2:/var/lib/phosphor-logging/extensions");
-    mkdir_dir("/SD2:/var/lib/phosphor-logging/errors");
+    // //phosphor-logging
+    // mkdir_dir("/SD2:/var/lib/phosphor-logging/extensions");
+    // mkdir_dir("/SD2:/var/lib/phosphor-logging/errors");
 
-    printk("Filesystem config initialization complete.\n");
+    // phosphor-bmc-code-mgt: image upload + activation staging live on the SD
+    // card because the writable littlefs (/overlay -> rwfs) is only ~2 MiB and
+    // cannot hold a 10 MiB+ firmware image.
+    mkdir_dir("/SD2:/images");
+    mkdir_dir("/SD2:/phosphor-bmc-code-mgt/staging");
+
+    // printk("Filesystem config initialization complete.\n");
     return 0;
 }

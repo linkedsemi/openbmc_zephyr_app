@@ -599,8 +599,8 @@ int objmgr_init()
 
 #if defined(CONFIG_OPENBMC_PHOSPHOR_BMC_CODE_MGT) && defined(ENABLE_OPENBMC_PHOSPHOR_BMC_CODE_MGT)
 // phosphor-bmc-code-mgt
-MODULE_DEFINE_CHAN_OBSERVER(phosphor_software_updater);
-MODULE_DEFINE_CHAN_OBSERVER_MATCH(phosphor_software_updater);
+// MODULE_DEFINE_CHAN_OBSERVER(phosphor_software_updater);
+// MODULE_DEFINE_CHAN_OBSERVER_MATCH(phosphor_software_updater);
 int software_updater_main();
 K_SEM_DEFINE(software_updater_ready_sem, 0, 1);
 
@@ -618,8 +618,8 @@ int software_updater_init()
 }
 
 int image_manager_main();
-MODULE_DEFINE_CHAN_OBSERVER(phosphor_image_manager);
-MODULE_DEFINE_CHAN_OBSERVER_MATCH(phosphor_image_manager);
+// MODULE_DEFINE_CHAN_OBSERVER(phosphor_image_manager);
+// MODULE_DEFINE_CHAN_OBSERVER_MATCH(phosphor_image_manager);
 K_SEM_DEFINE(image_manager_ready_sem, 0, 1);
 
 void* image_manager_thread_handler(void *arg)
