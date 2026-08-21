@@ -8,31 +8,31 @@ cmake_minimum_required(VERSION 3.20.0)
 # Leave off for production builds. MUST be set before find_package(Zephyr)
 # because the overlay is consumed during devicetree generation (Kconfig runs
 # first inside find_package, so the CONFIG cache var is picked up too).
-if(FAKE_TEMP_TEST)
+#if(FAKE_TEMP_TEST)
   set(CONFIG_FAKE_TEMP_SENSOR y CACHE BOOL "fake temp sensor" FORCE)
   set(EXTRA_DTC_OVERLAY_FILE
       "${CMAKE_CURRENT_LIST_DIR}/boards/lsqsh_evb_cpu1_fake_temp.overlay"
       CACHE FILEPATH "fake temp test overlay" FORCE)
-endif()
+#endif()
 
 # --- Self-test: fake PSU sensor (hwmon_i2c -> PSUSensor) ---
 #   west build -b <board> app -DFAKE_PSU_TEST=y
 # (Can be combined with -DFAKE_TEMP_TEST=y: the overlay is appended to the
 # list so both apply. Set before find_package(Zephyr), same reason as above.)
-if(FAKE_PSU_TEST)
+#if(FAKE_PSU_TEST)
   set(CONFIG_FAKE_PSU_SENSOR y CACHE BOOL "fake psu sensor" FORCE)
   list(APPEND EXTRA_DTC_OVERLAY_FILE
        "${CMAKE_CURRENT_LIST_DIR}/boards/lsqsh_evb_cpu1_fake_psu.overlay")
-endif()
+#endif()
 
 # --- Self-test: fake PECI CPU temperature/power sensor (hwmon_i2c -> IntelCPUSensor) ---
 #   west build -b <board> app -DFAKE_PECI_CPUTEMP_TEST=y
 # (Can be combined with -DFAKE_TEMP_TEST=y / -DFAKE_PSU_TEST=y.)
-if(FAKE_PECI_CPUTEMP_TEST)
+#if(FAKE_PECI_CPUTEMP_TEST)
   set(CONFIG_FAKE_PECI_CPUTEMP y CACHE BOOL "fake peci cpu sensor" FORCE)
   list(APPEND EXTRA_DTC_OVERLAY_FILE
        "${CMAKE_CURRENT_LIST_DIR}/boards/lsqsh_evb_cpu1_fake_peci_cputemp.overlay")
-endif()
+#endif()
 
 # --- Real Intel PECI CPU sensor (hwmon_i2c -> IntelCPUSensor) ---
 # Build-switch (the -D...=y kind) is reserved for fake self-test sensors
@@ -89,19 +89,19 @@ target_sources(app PRIVATE
 )
 
 # Self-test fake temperature sensor (hwmon_i2c -> HwmonTempSensor path).
-if (CONFIG_FAKE_TEMP_SENSOR)
+#if (CONFIG_FAKE_TEMP_SENSOR)
   target_sources(app PRIVATE src/fake_temp.c)
-endif()
+#endif()
 
 # Self-test fake PSU sensor (hwmon_i2c -> PSUSensor path).
-if (CONFIG_FAKE_PSU_SENSOR)
+#if (CONFIG_FAKE_PSU_SENSOR)
   target_sources(app PRIVATE src/fake_psu.c)
-endif()
+#endif()
 
 # Self-test fake PECI CPU temperature sensor (hwmon_i2c -> IntelCPUSensor path).
-if (CONFIG_FAKE_PECI_CPUTEMP)
+#if (CONFIG_FAKE_PECI_CPUTEMP)
   target_sources(app PRIVATE src/fake_peci_cputemp.c)
-endif()
+#endif()
 
 # Real Intel PECI CPU sensor (hwmon_i2c -> IntelCPUSensor path).
 # Requires the PECI controller driver to be enabled (CONFIG_PECI=y +
