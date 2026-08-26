@@ -86,6 +86,9 @@ target_sources(app PRIVATE
   src/socketpool.c
   src/config_fs.c
   src/busctl_shell.c
+  # i2c-tools debug shell commands (i2cdetect/i2cget/i2cset/i2cdump/i2ctransfer).
+  # Default-on, no Kconfig guard -- mirrors busctl_shell.c / ipmitool_shell.c.
+  src/i2c_tools_shell.c
 )
 
 # Self-test fake temperature sensor (hwmon_i2c -> HwmonTempSensor path).
@@ -172,6 +175,7 @@ zephyr_library_link_libraries(
 	dbus-broker
 	basu
   phosphor-objmgr
+  i2c-tools
 )
 
 # zephyr_library_link_libraries(sd-bus)
