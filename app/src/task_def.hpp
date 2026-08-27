@@ -231,7 +231,7 @@ int entity_manager_init();
 extern struct k_sem entity_manager_ready_sem;
 
 #define CONFIG_THREAD_PRI_FRU 10
-#define FRU_DEVICE_THREAD_STACK_SIZE (12 * 1024)
+#define FRU_DEVICE_THREAD_STACK_SIZE (32 * 1024)
 int fru_device_init();
 extern struct k_sem fru_device_ready_sem;
 
