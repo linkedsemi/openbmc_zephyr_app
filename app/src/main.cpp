@@ -445,7 +445,7 @@ int main(void)
     // k_sleep(K_SECONDS(5));
 
     // Only create code-mgt directories
-    config_fs_init();
+    // config_fs_init();
 
     LOG_INF("Starting BMC application with dependency management...\n");
 
