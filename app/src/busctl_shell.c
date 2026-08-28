@@ -108,7 +108,7 @@ SHELL_CMD_ARG_REGISTER(busctl, NULL,
 	"busctl - D-Bus introspection tool\n"
 	"Subcommands: list, status, tree, introspect, call,\n"
 	"             get-property, set-property, help",
-	cmd_busctl, 1, 12);
+	cmd_busctl, 1, 32);
 
 static int busctl_shell_init(void)
 {
