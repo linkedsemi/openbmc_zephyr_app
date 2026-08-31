@@ -121,7 +121,7 @@ target_compile_definitions(app PRIVATE
 -D_AF_UNIX_EXISTS_=1
 )
 
-zephyr_compile_options(-msmall-data-limit=0 -Wno-strict-prototypes -Wno-macro-redefinition)
+zephyr_compile_options(-msmall-data-limit=0 -Wno-strict-prototypes -Wno-macro-redefinition -Wno-implicit-fallthrough)
 target_link_options(app PRIVATE -Wl,--no-relax)
 # Route every abort() call through our __wrap_abort() so a silent
 # c_assert/abort() inside dbus-broker (which would otherwise kill the
@@ -187,6 +187,7 @@ zephyr_library_link_libraries(boost)
 zephyr_compile_definitions(
     _GNU_SOURCE
     # SDBUSPLUS_DISABLE_BOOST_COROUTINES
+    _GLIBCXX_USE_C99_MATH_FUNCS
     _GLIBCXX_HAVE_ALIGNED_ALLOC
     _GLIBCXX_HAVE_STRTOLD
     _GLIBCXX_HAVE_DIRENT_H

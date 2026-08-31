@@ -81,15 +81,15 @@ int shmdt (const void *__shmaddr)
 // {
 //     return 0;
 // }
-// int _stat (const char *fname, struct stat *st)
-// {
-//     return stat(fname, st);
-// }
+int _stat (const char *fname, struct stat *st)
+{
+    return stat(fname, st);
+}
 
-// int _mkdir(const char *path, mode_t mode)
-// {
-//     return mkdir(path, mode);
-// }
+int _mkdir(const char *path, mode_t mode)
+{
+    return mkdir(path, mode);
+}
 
 // int	munmap(void *, size_t)
 // {
