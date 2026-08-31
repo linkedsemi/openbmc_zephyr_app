@@ -13,7 +13,7 @@
 
 // // interfaces
 #define ENABLE_OPENBMC_PHOSPHOR_HOST_IPMID
-// #define ENABLE_OPENBMC_BMCWEB
+#define ENABLE_OPENBMC_BMCWEB
 
 // // communication
 // #define ENABLE_OPENBMC_IPMBBRIDGE

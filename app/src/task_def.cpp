@@ -545,14 +545,15 @@ int user_manager_init()
 
 #if defined(CONFIG_OPENBMC_BMCWEB) && defined(ENABLE_OPENBMC_BMCWEB)
 //bmcweb
-MODULE_DEFINE_CHAN_OBSERVER(bmcweb);
-MODULE_DEFINE_CHAN_OBSERVER_MATCH(bmcweb);
 int bmcweb_main(int /*argc*/, char** /*argv*/);
 K_SEM_DEFINE(bmcweb_ready_sem, 0, 1);
 
 void* bmcweb_thread_handler(void *arg)
 {
-    bmcweb_main(0, NULL);
+    const char* argv[] = {
+    "bmcweb",
+    nullptr};
+    bmcweb_main(1, const_cast<char**>(argv));
     return NULL;
 }
 int bmcweb_init()

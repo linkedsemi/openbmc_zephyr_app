@@ -191,7 +191,7 @@ THREAD_DEFINE(bios_settings_mgr, bios_settings_mgr_init, bios_settings_ready_sem
 #endif
 
 #ifdef ENABLE_OPENBMC_BMCWEB
-THREAD_DEFINE(bmcweb, bmcweb_init, bmcweb_ready_sem, "zbus_broker", "user_manager");
+THREAD_DEFINE(bmcweb, bmcweb_init, bmcweb_ready_sem, "dbus_broker"/*, "user_manager"*/);
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_BMC_CODE_MGT
