@@ -65,6 +65,52 @@ if(CONFIG_SENSOR_INTEL_PECI)
        "${CMAKE_CURRENT_LIST_DIR}/boards/lsqsh_evb_cpu1_intel_peci.overlay")
 endif()
 
+# ---------------------------------------------------------------------------
+# wolfSSH/wolfSSL misc.c de-duplication -- done HERE so the wolfssh/wolfssl
+# module CMakeLists stay untouched (both are pristine).
+#
+# app/wolfssl_user_settings.h defines NO_INLINE (required: this wolfssl fork
+# stripped the !NO_INLINE inline branch from wolfcrypt/misc.h, so wolfSSH
+# would fail with implicit declarations for ForceZero/ato32/c32toa/...).
+# With NO_INLINE the misc.c copies export real external symbols, and exactly
+# ONE of them must be linked:
+#   - wolfssl's wolfcrypt/src/misc.c is the SUPERSET (also covers what
+#     wolfssl's TLS internal.c needs) -- this is the one we want, but the
+#     pristine wolfssl module has it COMMENTED OUT (line ~98);
+#   - wolfssh's bundled src/misc.c (a subset) IS built pristine, because the
+#     wolfssh module does target_sources(app PRIVATE src/*.c).
+# So from the app side:
+#   a) drop wolfssh's bundled copy from the 'app' target (the module
+#      compiles its sources into 'app', included during find_package above);
+#   b) append wolfssl's wolfcrypt/src/misc.c to the wolfssl library target
+#      (found via the ZEPHYR_LIBS global property; its name is the
+#      path-derived "..__modules__lib__wolfssl__zephyr").
+#.regex notes: (a) matches only <module>/wolfssh/src/misc.c -- NOT the
+# app's own src/misc.c below. (b) is a no-op when the wolfssl module is
+# ever re-enabled upstream, as long as the target name matches "wolfssl".
+get_target_property(APP_SRCS app SOURCES)
+if(NOT APP_SRCS STREQUAL "APP_SRCS-NOTFOUND")
+  list(FILTER APP_SRCS EXCLUDE REGEX "/wolfssh/src/misc\\.c$")
+  set_target_properties(app PROPERTIES SOURCES "${APP_SRCS}")
+endif()
+
+set(WOLFSSL_MISC_TARGET "")
+get_property(ZEPHYR_ALL_LIBS GLOBAL PROPERTY ZEPHYR_LIBS)
+foreach(lib ${ZEPHYR_ALL_LIBS})
+  if(lib MATCHES "wolfssl" AND NOT WOLFSSL_MISC_TARGET)
+    set(WOLFSSL_MISC_TARGET ${lib})
+  endif()
+endforeach()
+if(WOLFSSL_MISC_TARGET)
+  target_sources(${WOLFSSL_MISC_TARGET} PRIVATE
+    ${ZEPHYR_WOLFSSL_MODULE_DIR}/wolfcrypt/src/misc.c)
+else()
+  message(FATAL_ERROR
+    "wolfssl library target not found in ZEPHYR_LIBS; cannot enable "
+    "wolfcrypt/src/misc.c from the app. If the wolfssl module structure "
+    "changed, update this block.")
+endif()
+
 project(openbmc LANGUAGES C CXX)
 
 target_include_directories(app PRIVATE include)

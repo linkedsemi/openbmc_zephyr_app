@@ -22,6 +22,13 @@
 #include <string.h>
 #include <setjmp.h>
 
+/* Active shell for the running i2c-tools command. Consumed by the stdio
+ * redirection in i2c-tools/zephyr/i2ctools_stdout.h (force-included into the
+ * i2c-tools library): the tools' printf/fprintf output is routed to the
+ * session that invoked the command (SSH or serial) instead of the UART
+ * console. Set/cleared around each command in the worker below. */
+const struct shell *g_i2ctools_shell;
+
 /* i2c char-dev force-release (defined in zephyr-devfs i2c_fs.c). Called after
  * each i2c-tools command to clear the stuck "is_open" flag that i2cdump leaves
  * behind when it exits via exit()/longjmp. Declared here to avoid a
@@ -50,6 +57,7 @@ struct i2c_tool_args {
 	int (*fn)(int argc, char **argv);
 	int argc;
 	char **argv;
+	const struct shell *sh;
 };
 K_MSGQ_DEFINE(i2c_tools_msgq, sizeof(struct i2c_tool_args), 1, 4);
 
@@ -66,6 +74,11 @@ static void i2c_tools_worker_fn(void *p1, void *p2, void *p3)
 			/* Should not happen with K_FOREVER, but stay alive. */
 			continue;
 		}
+
+		/* Route the tool's stdout/stderr to the invoking session.
+		 * Set BEFORE setjmp so the global survives an exit() via
+		 * longjmp back here. */
+		g_i2ctools_shell = args.sh;
 
 		/* Run the tool. If it calls exit(), i2c_tool_exit() longjmps
 		 * back here (rc != 0) instead of terminating the thread. */
@@ -90,6 +103,8 @@ static void i2c_tools_worker_fn(void *p1, void *p2, void *p3)
 			free(args.argv[i]);
 		}
 		free(args.argv);
+
+		g_i2ctools_shell = NULL;
 	}
 }
 
@@ -122,6 +137,7 @@ static int i2c_tool_enqueue(const struct shell *sh, size_t argc, char **argv,
 	args.fn = fn;
 	args.argc = argc;
 	args.argv = argv_copy;
+	args.sh = sh;
 
 	/* Depth-1 queue: if the worker is still busy (e.g. a previous command
 	 * is blocked on an unresponsive I2C device), fail fast with -EBUSY

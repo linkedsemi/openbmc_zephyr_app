@@ -27,14 +27,23 @@
 /* busctl Zephyr entry point (from basu) */
 extern int basu_busctl_entry(int argc, char *argv[]);
 
-/* Worker thread stack and control */
-K_THREAD_STACK_DEFINE(busctl_shell_stack, 16 * 1024);
+/* Active shell instance for the running busctl command. Set by the worker
+ * thread before basu_busctl_entry() so busctl's stdio output (redirected in
+ * busctl.c) is routed to the session that invoked it (SSH or serial shell). */
+const struct shell *g_busctl_shell;
+
+/* Worker thread stack and control.
+ * busctl (especially get-property/call) recurses through sd_bus + variant
+ * parsing (format_cmdline) which can exceed the 16K default; matched to the
+ * ssh daemon stack sizing that was enlarged for the same reason. */
+K_THREAD_STACK_DEFINE(busctl_shell_stack, 32 * 1024);
 static struct k_thread busctl_shell_thread;
 
 /* Command handoff: one pending command at a time (depth-1 queue => serial). */
 struct busctl_thread_args {
 	int argc;
 	char **argv;
+	const struct shell *sh;
 };
 K_MSGQ_DEFINE(busctl_msgq, sizeof(struct busctl_thread_args), 1, 4);
 
@@ -52,7 +61,9 @@ static void busctl_worker_fn(void *p1, void *p2, void *p3)
 			continue;
 		}
 
+		g_busctl_shell = args.sh;
 		basu_busctl_entry(args.argc, args.argv);
+		g_busctl_shell = NULL;
 
 		/* Cleanup (argv was heap-allocated in cmd_busctl). */
 		for (int i = 0; i < args.argc; i++) {
@@ -88,6 +99,7 @@ static int cmd_busctl(const struct shell *sh, size_t argc, char **argv)
 
 	args.argc = argc;
 	args.argv = argv_copy;
+	args.sh = sh;
 
 	/* Depth-1 queue: if the worker is still busy (e.g. a previous command
 	 * is blocked on an unresponsive bus), the queue is full and we fail
