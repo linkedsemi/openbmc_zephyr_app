@@ -289,15 +289,26 @@ extern "C" {
 }
 
 // #ifdef CONFIG_ZEPHYRBMC_FILESYSTEM
-static struct fs_mount_t *mp_ro_lfs;
+// static struct fs_mount_t *mp_ro_lfs;
 static struct fs_mount_t *mp_rw_lfs;
+
+static FATFS fat_rofs;
+/* mounting info */
+static struct fs_mount_t mp_ro_lfs = {
+    .type = FS_FATFS,
+    .mnt_point = CONFIG_FS_ROOT_RO,
+    .fs_data = &fat_rofs,
+    /* Read-only image: refuse writes, and never let a failed mount format it */
+    .flags = FS_MOUNT_FLAG_READ_ONLY | FS_MOUNT_FLAG_NO_FORMAT,
+};
 
 static FATFS fat_fs;
 /* mounting info */
 static struct fs_mount_t sd2mp = {
-	.type = FS_FATFS,
-    .mnt_point = "/SD2:",
-	.fs_data = &fat_fs,
+    .type = FS_FATFS,
+    /* Mount point comes from Kconfig (unix style volume ID: no colon) */
+    .mnt_point = CONFIG_FS_ROOT_SD2,
+    .fs_data = &fat_fs,
 };
 
 
@@ -324,7 +335,7 @@ static struct fs_mount_t sd2mp = {
 void fs_params_init()
 {
 #if defined(CONFIG_FILE_SYSTEM_LITTLEFS)
-#define PARTITION_NODE_RO_A DT_NODELABEL(ro_lfs_a)
+// #define PARTITION_NODE_RO_A DT_NODELABEL(ro_lfs_a)
 // #define PARTITION_NODE_RO_B DT_NODELABEL(ro_lfs_b)
     // const struct device* const flash_dev = DEVICE_DT_GET(DT_NODELABEL(qspi1));
 
@@ -332,8 +343,8 @@ void fs_params_init()
     // if (ear == 0x0)
     // {
         // LOG_INF("Selecting RO_A partition (EAR=0x%02X)", ear);
-        FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RO_A);
-        mp_ro_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RO_A);
+        // FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE_RO_A);
+        // mp_ro_lfs = &FS_FSTAB_ENTRY(PARTITION_NODE_RO_A);
     // }
     // else
     // {
@@ -360,7 +371,7 @@ int overlayfs_init()
 {
     int ret = 0;
     struct overlay_mount_data* fs_data =  (struct overlay_mount_data*)mp_overlay.fs_data;
-    fs_data->ro_mnt = mp_ro_lfs;
+    fs_data->ro_mnt = &mp_ro_lfs;
     fs_data->rw_mnt = mp_rw_lfs;
 
     ret = fs_mount(&mp_overlay);
@@ -389,17 +400,24 @@ static int filesystem_init()
     // }
     // ret = storage_fs_init();
 #if defined(CONFIG_FILE_SYSTEM_LITTLEFS)
-    ret = fs_mount(mp_ro_lfs);
-    if (ret) {
-        while(1);
-        goto err;
-    }
+    // ret = fs_mount(mp_ro_lfs);
+    // if (ret) {
+    //     while(1);
+    //     goto err;
+    // }
     ret = fs_mount(mp_rw_lfs);
     if (ret) {
         while(1);
         goto err;
     }
 #endif
+
+    ret = fs_mount(&mp_ro_lfs);
+    if (ret) {
+        while(1);
+        goto err;
+    }
+
     ret = fs_mount(&sd2mp);
     if (ret) {
         while(1);

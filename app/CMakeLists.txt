@@ -130,7 +130,7 @@ target_sources(app PRIVATE
   src/net_stack_cfg.c
   src/dbroker.c
   src/socketpool.c
-  src/config_fs.c
+#   src/config_fs.c
   src/busctl_shell.c
   # i2c-tools debug shell commands (i2cdetect/i2cget/i2cset/i2cdump/i2ctransfer).
   # Default-on, no Kconfig guard -- mirrors busctl_shell.c / ipmitool_shell.c.

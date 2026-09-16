@@ -100,6 +100,16 @@ config FS_ROOT_OVERLAY
     prompt "Root filesystem overlay path"
     default "/overlay"
 
+config FS_ROOT_SD2
+    string
+    prompt "Root filesystem SD2 (writable data volume) path"
+    default "/SD2"
+    help
+      Mount point of the writable SD2 FAT volume (eMMC/SD).
+      FatFs is built with FF_STR_VOLUME_ID=2 (CONFIG_ZEPHYR_FATFS_UNIX_MNTPOINT=y),
+      so the volume is addressed unix-style ("/SD2/..."), not "/SD2:/...".
+      All code that stores paths on SD2 should build them from this symbol.
+
 config FAKE_TEMP_SENSOR
 	bool "Fake temperature sensor for hwmon self-test"
 	default n
