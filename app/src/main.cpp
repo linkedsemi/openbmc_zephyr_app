@@ -200,7 +200,7 @@ THREAD_DEFINE(image_manager, image_manager_init, image_manager_ready_sem, "dbus_
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_SEL_LOGGER
-THREAD_DEFINE(sel_logger, sel_logger_init, sel_logger_ready_sem, "zbus_broker", "logging");
+THREAD_DEFINE(sel_logger, sel_logger_init, sel_logger_ready_sem, "dbus_broker", "logging");
 #endif
 
 #ifdef ENABLE_OPENBMC_PHOSPHOR_BMC_STATE_MANAGER
