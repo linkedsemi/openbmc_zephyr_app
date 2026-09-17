@@ -40,6 +40,18 @@ extern "C" {
 #undef  HAVE_AESGCM
 #define HAVE_AESGCM
 
+/* the GCM method must be selected in THIS file - it is the effective
+* settings (included from modules/lib/wolfssl/zephyr/user_settings.h via
+* WOLFSSL_SETTINGS_FILE="wolfssl_user_settings.h"). The GCM defaults in
+* zephyr/user_settings.h live in the #else branch of
+* #ifdef WOLFSSL_SETTINGS_FILE and are never compiled. 
+* without this define the build fell through to the WORD64_AVAILABLE bit-loop 
+* GMULT - the real cause of the ~300 ms ws_proc avg per 16 KiB TLS record. 
+* GCM_TABLE_4BIT builds a 512-byte M0 nibble table once per key at the handshake 
+* (GenerateM0, RAM in tne Aes struct) and multiplies with word32ops on WC_32BIT_CPU. */
+#undef GCM_TABLE_4BIT
+#define GCM_TABLE_4BIT
+
 #undef  WOLFSSL_SHA512
 #define WOLFSSL_SHA512
 

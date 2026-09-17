@@ -213,4 +213,26 @@ config LOG_MAX_LEVEL
 	depends on !LOG
 	default 4
 
+config CODEMGT_AUTO_ACTIVATE
+	bool "Automatically activate a freshly uploaded BMC image"
+	default n
+	help
+		When enabled, every BMC image that is uploaded and unpacked
+		successfully is activated immediately: code-mgt writes it to the
+		opposite flash slot, switches the boot environment (dual_sec_active_image
+		/ app_*_partition_offset in the SBL env) and reboots the BMC. It is
+		the same path as setting Software.Activation.RequestedActivation to
+		Active by hand, just without the busctl step.
+
+		When disabled (the default), an uploaded image is only unpacked and
+		published, and the activation stays under user control:
+		  busctl set-property xyz.openbmc_project.Software.BMC.Updater \
+		    /xyz/openbmc_project/software/<id> \
+		    xyz.openbmc_project.Software.Activation RequestedActivation s \
+		    xyz.openbmc_project.Software.Activation.RequestedActivations.Active
+
+		Keep this OFF while a failed activation (a bad image, a flash write
+		that does not complete) would otherwise put the board into a reboot
+		loop on every upload.
+
 source "Kconfig.zephyr"
