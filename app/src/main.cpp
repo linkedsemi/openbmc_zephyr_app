@@ -482,9 +482,8 @@ int main(void)
     // extern int objmgr_test_init(void);
     // objmgr_test_init();
 
-    extern int ipmid_test(void);
-
-    ipmid_test();
+    // extern int ipmid_test(void);
+    // ipmid_test();
     /* Keep main thread alive so worker threads can run */
     while (1) {
         k_msleep(20000); /* Check every 2 seconds */
