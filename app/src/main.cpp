@@ -307,7 +307,7 @@ static FATFS fat_fs;
 static struct fs_mount_t sd2mp = {
     .type = FS_FATFS,
     /* Mount point comes from Kconfig (unix style volume ID: no colon) */
-    .mnt_point = CONFIG_FS_ROOT_SD2,
+    .mnt_point = CONFIG_FS_ROOT_MNT,
     .fs_data = &fat_fs,
 };
 

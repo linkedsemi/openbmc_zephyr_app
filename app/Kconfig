@@ -100,15 +100,19 @@ config FS_ROOT_OVERLAY
     prompt "Root filesystem overlay path"
     default "/overlay"
 
-config FS_ROOT_SD2
+config FS_ROOT_MNT
     string
-    prompt "Root filesystem SD2 (writable data volume) path"
-    default "/SD2"
+    prompt "Root filesystem data volume (eMMC) mount path"
+    default "/mnt"
     help
-      Mount point of the writable SD2 FAT volume (eMMC/SD).
+      Mount point of the writable data FAT volume (eMMC, disk-name "mnt").
       FatFs is built with FF_STR_VOLUME_ID=2 (CONFIG_ZEPHYR_FATFS_UNIX_MNTPOINT=y),
-      so the volume is addressed unix-style ("/SD2/..."), not "/SD2:/...".
-      All code that stores paths on SD2 should build them from this symbol.
+      so the volume is addressed unix-style ("/mnt/...", no colon) and the
+      mount point must equal the volume name: keep it in sync with
+      CONFIG_ZEPHYR_FATFS_SD2_ALIAS_UNIX ("mnt") and the disk-name of the mmc
+      disk node in the board overlay.
+      All code that stores paths on this volume should build them from this
+      symbol.
 
 config FAKE_TEMP_SENSOR
 	bool "Fake temperature sensor for hwmon self-test"

@@ -38,7 +38,7 @@ static int write_file(const char *file_path, const char *content);
 static int read_file(const char *file_path);
 
 /* -- IPMI configuration file paths -- */
-#define CFG_DIR "/SD2:/usr/share/ipmi-providers"
+#define CFG_DIR CONFIG_FS_ROOT_MNT "/usr/share/ipmi-providers"
 
 /* -- Default IPMI configuration JSON content -- */
 
@@ -690,7 +690,7 @@ static int mkdir_dir(const char *path)
     strncpy(tmp, path, sizeof(tmp) - 1);
     tmp[sizeof(tmp) - 1] = '\0';
 
-    /* Skip the leading mount prefix (e.g. /SD2:) to avoid creating
+    /* Skip the leading mount prefix (e.g. /mnt) to avoid creating
      * an empty directory entry.
      */
     if (tmp[0] == '/') {
@@ -849,15 +849,15 @@ int config_fs_init(void)
     // printk("Initializing filesystem config...\n");
 
     /* List current filesystem contents */
-    // lsdir_recursive("/SD2:");
-    // fs_rm_rf("/SD2:/var");
-    // fs_rm_rf("/SD2:/run");
-    // fs_rm_rf("/SD2:/usr");
-    // fs_rm_rf("/SD2:/tmp");
-    // fs_rm_rf("/SD2:/data1");
-    // fs_rm_rf("/SD2:/images");
-    // fs_rm_rf("/SD2:/phosphor-bmc-code-mgt");
-    // lsdir_recursive("/SD2:");
+    // lsdir_recursive("/mnt");
+    // fs_rm_rf("/mnt/var");
+    // fs_rm_rf("/mnt/run");
+    // fs_rm_rf("/mnt/usr");
+    // fs_rm_rf("/mnt/tmp");
+    // fs_rm_rf("/mnt/data1");
+    // fs_rm_rf("/mnt/images");
+    // fs_rm_rf("/mnt/phosphor-bmc-code-mgt");
+    // lsdir_recursive("/mnt");
 
     /* Write default IPMI configuration files (idempotent) */
     // ret = write_config(dev_id_path, devid_json);
@@ -887,19 +887,19 @@ int config_fs_init(void)
 
     /* Create runtime directories */
     // phosphor-host-ipmid
-    // mkdir_dir("/SD2:/var/lib/ipmi");
-    // mkdir_dir("/SD2:/run/ipmi");
-    // mkdir_dir("/SD2:/usr/share/ipmi-providers");
+    // mkdir_dir("/mnt/var/lib/ipmi");
+    // mkdir_dir("/mnt/run/ipmi");
+    // mkdir_dir("/mnt/usr/share/ipmi-providers");
 
     // //phosphor-logging
-    // mkdir_dir("/SD2:/var/lib/phosphor-logging/extensions");
-    // mkdir_dir("/SD2:/var/lib/phosphor-logging/errors");
+    // mkdir_dir("/mnt/var/lib/phosphor-logging/extensions");
+    // mkdir_dir("/mnt/var/lib/phosphor-logging/errors");
 
     // phosphor-bmc-code-mgt: image upload + activation staging live on the SD
     // card because the writable littlefs (/overlay -> rwfs) is only ~2 MiB and
     // cannot hold a 10 MiB+ firmware image.
-    mkdir_dir("/SD2:/images");
-    mkdir_dir("/SD2:/phosphor-bmc-code-mgt/staging");
+    mkdir_dir(CONFIG_FS_ROOT_MNT "/images");
+    mkdir_dir(CONFIG_FS_ROOT_MNT "/phosphor-bmc-code-mgt/staging");
 
     // printk("Filesystem config initialization complete.\n");
     return 0;

@@ -439,6 +439,13 @@
     read-only;
 };
 
+/* The writable data volume (eMMC) is mounted at CONFIG_FS_ROOT_MNT ("/mnt").
+ * FatFs resolves a volume string by disk name, so the eMMC disk must be named
+ * "mnt" as well -- keep it in sync with CONFIG_ZEPHYR_FATFS_SD2_ALIAS_UNIX. */
+&mmc_disk1 {
+    disk-name = "mnt";
+};
+
 &pinctrl {
     /omit-if-no-ref/fan_pwm12_pn12: fan_pwm12_pn12 {
         pinmux = <PWM12_FUNC1_IDX25_PINMUX_PN(12)>;
