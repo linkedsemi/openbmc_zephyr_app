@@ -1042,8 +1042,8 @@ int logging_init()
 
 #if defined(CONFIG_OPENBMC_PHOSPHOR_SEL_LOGGER) && defined(ENABLE_OPENBMC_PHOSPHOR_SEL_LOGGER)
 //phosphor-sel-logger
-MODULE_DEFINE_CHAN_OBSERVER(sel_logger);
-MODULE_DEFINE_CHAN_OBSERVER_MATCH(sel_logger);
+//MODULE_DEFINE_CHAN_OBSERVER(sel_logger);
+//MODULE_DEFINE_CHAN_OBSERVER_MATCH(sel_logger);
 int sel_logger_main(int, char*[]);
 K_SEM_DEFINE(sel_logger_ready_sem, 0, 1);
 
