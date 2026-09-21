@@ -1,26 +1,20 @@
-# **LS1020 OpenBMC 20260811 版本发布说明**
+# **LS1020 OpenBMC 20260921 版本发布说明**
 
 ## 概述
 
-#### OpenBMC Zephyr SDK 是基于 Zephyr RTOS 的 OpenBMC 软件运行环境，在资源受限的 BMC SoC 上实现 OpenBMC 核心功能栈：D-Bus 消息总线、sdbusplus/basu 通信库、phosphor-logging 日志框架、entity-manager 配置管理、dbus-sensors 传感器采集，以及 host-ipmid / net-ipmid / KCS 桥接等 BMC 管控通道。
+#### OpenBMC Zephyr SDK 是基于 Zephyr RTOS 的 OpenBMC 软件运行环境，在资源受限的 BMC SoC 上实现 OpenBMC 核心功能栈：D-Bus 消息总线、sdbusplus/basu 通信库、phosphor-logging 日志框架、entity-manager 配置管理、dbus-sensors 传感器采集，以及 host-ipmid / net-ipmid / KCS 桥接等 BMC 管控通道。通过 Redfish / IPMI / KCS 等接口与主机及网络交互，实现 BMC 的管理功能。也可以通过网页浏览器访问 BMC 的 Redfish 接口，实现 BMC 的管理功能。
 
-#### 本次版本发布，在凌思微基板管理控制芯片（Lite-BMC） **LS1020** 的 2026-04-24 软件基线之上，新增了**文件系统**、**传感器采集**、**配置管理**、**KCS 桥接**以及若干支撑库，还加入了在 BMC shell 上可执行的 **busctl** 和 **ipmi** 等指令，形成可实际采集传感器、可经 IPMI/KCS 与主机及网络交互的较完整 BMC 软件栈。
+#### 本次版本发布，在凌思微基板管理控制芯片（Lite-BMC） **LS1020** 的 2026-08-11 软件基线之上，新增了 **BMCWEB / Redfish 功能**、**固件升级功能**、**系统事件日志功能**、**A/B 双区启动功能**以及相关支撑库，还使能了 **SSH** 远程访问功能。基本具备比较完整的 BMC 软件栈。
 
 #### 本次版本发布包含的核心 OpenBMC 模块如下：
 
-> - phosphor-host-ipmid 
+> - bmcweb
 >
-> - phosphor-net-ipmid
+> - webui-vue
 >
-> - phosphor-objmgr
+> - phosphor-bmc-code-mgt
 >
-> - phosphor-dbus-interfaces
->
-> - phosphor-entity-manager
->
-> - phosphor-dbus-sensors
->
-> - phosphor-logging
+> - phosphor-sel-logger
 >
 
 ## 软件架构
@@ -33,9 +27,13 @@
 │  ├─ phosphor-host-ipmid       # 主机本地 IPMI（KCS/BT接口）
 │  ├─ phosphor-net-ipmid        # 远程网络 IPMI（RMCP+）
 │  ├─ kcsbridge                 # 主机 KCS 桥接（KCS 报文经 D-Bus 转发至 IPMI 服务）
+│  ├─ bmcweb                    # Redfish/HTTPS 服务（Web 服务端、Redfish 接口、固件上传、静态资源托管）
+│  ├─ webui-vue                 # BMC Web 前端（Vue2 SPA，预构建 dist 打包进 rofs，gzip 静态资源）
+│  ├─ phosphor-bmc-code-mgt     # 固件升级管理（软件版本/激活、tar 解包、A/B 槽位烧写）
 │  ├─ dbus-sensors              # 传感器采集（HwmonTemp/PSUSensor/IntelCPU/ADC/Fan/Intrusion/External）
 │  ├─ entity-manager            # FRU/传感器/机箱配置管理（含 fru-device）
 │  ├─ phosphor-logging          # SEL/ELOG/Redfish 事件日志
+│  ├─ phosphor-sel-logger       # 系统事件日志（IPMI SEL 记录/查询，落盘持久化）
 │  └─ phosphor-objmgr           # 对象管理器（接口聚合、属性缓存）
 ├─ 核心中间件层（IPC+事件驱动）
 │  ├─ phosphor-dbus-interfaces  # D-Bus 接口YAML标准定义
@@ -53,21 +51,24 @@
 │  │  ├─ function2              # 高效函数绑定/回调
 │  │  ├─ fmt                    # 日志/字符串格式化
 │  │  ├─ nlohmann_json          # JSON 解析/序列化
+│  │  ├─ cli11                  # 命令行参数解析（bmcweb）
 │  │  └─ tinyxml2               # 轻量 XML 解析
 │  ├─ RTOS&系统抽象
 │  │  ├─ zephyr                 # Zephyr RTOS 内核
 │  │  ├─ zephyr-osal            # 跨OS抽象层（Linux/Zephyr适配）
 │  │  ├─ zephyr-devfs           # Zephyr设备文件系统抽象（hwmon_xxx/gpio/i2c等）
+│  │  ├─ fw_env                 # SBL 环境变量读写（A/B 槽位/启动参数，固件升级模块使用）
 │  │  └─ libgpiod / i2c-tools   # GPIO/i2c 工具库（传感器外设访问）
 │  └─ 芯片平台BSP
 │     ├─ linkedsemi             # 凌思微 BMC SoC 驱动 BSP
-│     └─ ls_sdk                 # LS 系列芯片底层 SDK
+│     ├─ ls_sdk                 # LS 系列芯片底层 SDK
+│     └─ boot_ram(SBL)          # 二级引导：A/B 槽位选择、XIP 重映射、启动回退
 └─ 安全&运维层（底层支撑）
    ├─ 加密通信
    │  ├─ mbedtls                # 轻量嵌入式 TLS（HTTPS/IPMI加密）
    │  └─ wolfssl                # 高性能 TLS（国密/FIPS/量子安全）
    ├─ 安全远程运维
-   │  └─ wolfssh                # 嵌入式 SSH/SOL/SFTP
+   │  └─ wolfssh                # 嵌入式 SSH/SOL/SFTP（已使能远程 SSH 登录 BMC shell）
    ├─ 代码安全
    │  └─ safeclib               # C标准库安全加固（防缓冲区溢出）
    ├─ 硬件调试
@@ -137,17 +138,55 @@
 │  ├─ valijson           # JSON Schema 校验
 │  └─ sdeventplus        # 事件循环
 │     └─ stdplus
-└─ dbus-sensors         # 顶层业务：传感器采集
-   ├─ sdbusplus          # D-Bus C++ 封装（暴露传感器对象）
-   │  ├─ nlohmann_json
-   │  └─ basu
-   ├─ sdeventplus        # 事件循环（io_context 驱动）
-   │  └─ stdplus
-   ├─ zephyr-devfs       # hwmon_general/hwmon_adc/hwmon_pwm_tach 等 sysfs 驱动（读取硬件）
-   ├─ libgpiod / i2c-tools  # GPIO/i2c外设访问
-   ├─ entity-manager     # 依赖配置（传感器/FRU 定义）
-   │  └─ sdbusplus
-   └─ phosphor-logging   # 日志上报
+├─ dbus-sensors         # 顶层业务：传感器采集
+│  ├─ sdbusplus          # D-Bus C++ 封装（暴露传感器对象）
+│  │  ├─ nlohmann_json
+│  │  └─ basu
+│  ├─ sdeventplus        # 事件循环（io_context 驱动）
+│  │  └─ stdplus
+│  ├─ zephyr-devfs       # hwmon_general/hwmon_adc/hwmon_pwm_tach 等 sysfs 驱动（读取硬件）
+│  ├─ libgpiod / i2c-tools  # GPIO/i2c外设访问
+│  ├─ entity-manager     # 依赖配置（传感器/FRU 定义）
+│  │  └─ sdbusplus
+│  └─ phosphor-logging   # 日志上报
+├─ bmcweb              # 顶层业务：Redfish/HTTPS 服务（含 Web UI 静态资源）
+│  ├─ boost              # HTTP/异步IO（asio 网络与定时器）
+│  ├─ sdbusplus          # Redfish 资源 ↔ D-Bus 后端
+│  │  ├─ nlohmann_json
+│  │  └─ basu
+│  ├─ phosphor-dbus-interfaces  # D-Bus 接口标准定义
+│  │  └─ sdbusplus
+│  ├─ phosphor-objmgr    # 对象树查询（Redfish 资源映射）
+│  ├─ phosphor-logging   # 日志/事件上报
+│  │  └─ sdbusplus
+│  ├─ nlohmann_json      # JSON 数据处理
+│  ├─ tinyxml2           # Redfish 注册表 XML 解析
+│  ├─ cli11              # 命令行参数解析
+│  └─ wolfssl            # HTTPS/TLS（OpenSSL 兼容层）
+├─ phosphor-bmc-code-mgt  # 顶层业务：固件升级管理（版本/激活/A/B 槽位烧写）
+│  ├─ sdbusplus          # D-Bus C++ 封装（Software.Version/Activation 对象）
+│  │  ├─ nlohmann_json
+│  │  └─ basu
+│  ├─ phosphor-dbus-interfaces  # D-Bus 接口标准定义
+│  │  └─ sdbusplus
+│  ├─ phosphor-objmgr    # 软件版本对象注册/发现
+│  ├─ phosphor-logging   # 升级事件与错误日志
+│  │  └─ sdbusplus
+│  ├─ stdplus            # C++ 标准库增强
+│  ├─ boost              # 通用工具库（文件系统/容器）
+│  ├─ fw_env             # SBL 环境变量（A/B 槽位选择与回退）
+│  └─ zephyr flash 驱动  # NOR flash 烧写（非活跃槽）
+├─ phosphor-sel-logger  # 顶层业务：系统事件日志（SEL）
+│  ├─ sdbusplus          # D-Bus C++ 封装（SEL 上报/查询）
+│  │  ├─ nlohmann_json
+│  │  └─ basu
+│  ├─ phosphor-host-ipmid  # SEL 命令与事件来源
+│  │  └─ sdbusplus
+│  ├─ phosphor-logging   # 事件持久化
+│  │  └─ sdbusplus
+│  └─ sdeventplus        # 事件循环
+│     └─ stdplus
+└─ webui-vue           # 顶层业务：BMC Web 前端（Vue2 SPA 构建期产物，无编译期依赖）
 ```
 #### 各模块代码仓库拉取的地址，详见项目启动仓库中的 west.yml
 
@@ -155,8 +194,8 @@
 
 官方文档请参考：[https://docs.zephyrproject.org/latest/develop/getting_started/index.html]
 
-#### 一、需要下载交叉编译工具链
-[https://github.com/linkedsemi/xuantie-900-gcc-elf-newlib-x86_64-v3.0.1/tree/dbus-ipmi-v1]
+#### 一、需要下载交叉编译工具链【 注意：工具链有更新 】
+[https://github.com/linkedsemi/xuantie-900-gcc-elf-newlib-x86_64-v3.0.1/releases/tag/ls-openbmc-dbg-archive-20260920]
 
 ```jsx
 指定交叉编译器
@@ -167,16 +206,32 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
 
 #### 二、基于 linux 环境的安装、配置步骤：
 
-1. 安装工具
+1. 安装工具 【 需要新安装 nvm & node ，并更新环境变量 】
 ```jsx
    sudo apt update
    sudo apt upgrade
    sudo apt install --no-install-recommends git cmake ninja-build gperf \
       ccache dfu-util device-tree-compiler wget python3-dev python3-venv python3-tk \
       xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1
+   
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+   nvm install node
 
    验证工具版本
    dtc --version
+   nvm --version
+   node --version
+   tar --version
+
+   * node 推荐用版本16，但是其他更新版本也可以使用
+```
+   在.bashrc中添加以下环境变量：
+```jsx
+   export NVM_DIR="$HOME/.nvm"
+   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+   export PATH="$HOME/.npm-global/bin:$PATH"
 ```
 
 2. 创建工作区目录,拉取项目启动仓库
@@ -232,6 +287,20 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
       - 在串口执行下面的命令：
          tftpc init 192.0.2.3 69;tftpc get_flashcp zephyr_flash_bram_xip_lsqsh_evb_1os_xip_lsqsh_cpu1.bin qspi@40000000 0x0;tftpc get_flashcp flash_rofs.bin qspi@40000000 0xD00000;
       - 看到两个文件的 "verify pass" 后复位 （kernel reboot 或者 power cycle），程序烧录、启动成功
+
+   > 新增固件升级和A/B区启动功能后，除上述烧录方式外（老版本不支持固件升级功能，应先使用上述方式烧录新固件），还支持以下固件升级方式：
+      - 新固件编译后在工作区目录下会生成firmware_update目录，里面会自动生成新编译固件的tar包和tar.gz压缩包
+      - 可以使用 postman、linux curl 或 windows curl.exe 上传新固件tar包或tar.gz压缩包，推荐使用 linux curl 或 postman，速度较快
+      - linux下命令举例（例子的命令从工作区目录执行，从其他目录执行需自行修改命令@ 后路径）：
+            curl -k -u root:0penBmc --data-binary @firmware_update/obmc-image-lsqsh_evb-v1.1.0.tar.gz https://192.0.2.13/redfish/v1/UpdateService/update
+      - 新固件包上传完会解压缩、解包，然后判决需要启动的区，flash image到新区后，自动从新区重启，从而实现A/B区交替启动
+      - 如不想自动激活刚上传的新固件，可以关掉 CONFIG_CODEMGT_AUTO_ACTIVATE
+      - 保留当前和上一版两个固件版本，“fs ls /mnt/images”可以看到两个 <版本id> 的目录
+      - 可以通过下面的命令来激活存盘版本，并从新区启动
+            busctl set-property xyz.openbmc_project.Software.BMC.Updater /xyz/openbmc_project/software/<版本id> xyz.openbmc_project.Software.Activation RequestedActivation s   xyz.openbmc_project.Software.Activation.RequestedActivations.Active
+      - 新增flash env的shell命令，当A/B区都成功启动过后，不上传新固件，也可以通过下面的命令实现快速切区启动
+            fwsetenv dual_app_active_image a （or b） +   kernel reboot
+      - 还支持 BMCWEB (https://https://192.0.2.13/) 里面的 Operations -> Firmware -> Update firmware 方式更新固件
 ```
 
 ## 应用使用说明
@@ -310,84 +379,120 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
 1. BMC shell
    除 kernel 相关指令外，BMC shell 还可以支持 busctl 指令和 ipmitool 指令， 例如：
    1) busctl 指令：
-   busctl list
-   busctl status
-   busctl help
-   busctl tree
-   busctl monitor
-   busctl tree org.freedesktop.DBus
-   busctl introspect org.freedesktop.DBus /org/freedesktop/DBus
-   busctl call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus ListNames
+      busctl list
+      busctl status
+      busctl help
+      busctl tree
+      busctl monitor
+      busctl tree org.freedesktop.DBus
+      busctl introspect org.freedesktop.DBus /org/freedesktop/DBus
+      busctl call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus ListNames
 
-   busctl tree xyz.openbmc_project.Ipmi.Channel.eth0
-   busctl tree xyz.openbmc_project.Ipmi.Host
-   busctl introspect xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi
-   busctl call xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi xyz.openbmc_project.Ipmi.Server execute yyyaya{sv} 6 0 4 0 0
-   busctl call xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi xyz.openbmc_project.Ipmi.Server execute yyyaya{sv} 6 0 1 0 0
-   
-   busctl tree xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3
-   busctl introspect xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3
-   busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS clearAttention
-   busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS setAttention
-   busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS forceAbort
-   
-   busctl tree xyz.openbmc_project.HwmonTempSensor
-   busctl get-property xyz.openbmc_project.HwmonTempSensor /xyz/openbmc_project/sensors/temperature/fake_temp xyz.openbmc_project.Sensor.Value Value
-   
-   busctl tree xyz.openbmc_project.ExternalSensor
-   busctl introspect xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value
-   busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value Value d 25.6
-   busctl get-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value Value
-   
-   busctl tree xyz.openbmc_project.PSUSensor
-   busctl introspect xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Input_Voltage
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/Input_Voltage_1  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Input_Voltage  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Output_Voltage  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/fake_psu_Input_Power  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/fake_psu_Output_Power  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/current/fake_psu_Output_Current  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/fan_tach/fake_psu_Fan_Speed_1  xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/temperature/fake_psu_Temperature  xyz.openbmc_project.Sensor.Value Value
-   
-   busctl tree xyz.openbmc_project.IntrusionSensor
-   busctl get-property xyz.openbmc_project.IntrusionSensor /xyz/openbmc_project/Chassis/Intrusion xyz.openbmc_project.Chassis.Intrusion Status
-   busctl set-property xyz.openbmc_project.IntrusionSensor /xyz/openbmc_project/Chassis/Intrusion xyz.openbmc_project.Chassis.Intrusion Status s "Normal"
-   
-   busctl tree xyz.openbmc_project.IntelCPUSensor
-   busctl introspect xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/Margin_CPU0 xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DIMM_A1_CPU0 xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DIMM_B1_CPU0 xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/power/Cpu_Power_CPU0 xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/power/Dimm_Power_CPU0 xyz.openbmc_project.Sensor.Value Value
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalAlarmHigh
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.State.Decorator.OperationalStatus Functional
-   busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.State.Decorator.Availability Available
+      busctl tree xyz.openbmc_project.Ipmi.Channel.eth0
+      busctl tree xyz.openbmc_project.Ipmi.Host
+      busctl introspect xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi
+      busctl call xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi xyz.openbmc_project.Ipmi.Server execute yyyaya{sv} 6 0 4 0 0
+      busctl call xyz.openbmc_project.Ipmi.Host /xyz/openbmc_project/Ipmi xyz.openbmc_project.Ipmi.Server execute yyyaya{sv} 6 0 1 0 0
+      
+      busctl tree xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3
+      busctl introspect xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3
+      busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS clearAttention
+      busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS setAttention
+      busctl call xyz.openbmc_project.Ipmi.Channel.ipmi_kcs3 /xyz/openbmc_project/Ipmi/Channel/ipmi_kcs3 xyz.openbmc_project.Ipmi.Channel.SMS forceAbort
+      
+      busctl tree xyz.openbmc_project.HwmonTempSensor
+      busctl get-property xyz.openbmc_project.HwmonTempSensor /xyz/openbmc_project/sensors/temperature/fake_temp xyz.openbmc_project.Sensor.Value Value
+      
+      busctl tree xyz.openbmc_project.ExternalSensor
+      busctl introspect xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value
+      busctl set-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value Value d 25.6
+      busctl get-property xyz.openbmc_project.ExternalSensor /xyz/openbmc_project/sensors/temperature/TestExternalSensor xyz.openbmc_project.Sensor.Value Value
+      
+      busctl tree xyz.openbmc_project.PSUSensor
+      busctl introspect xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Input_Voltage
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/Input_Voltage_1  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Input_Voltage  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/voltage/fake_psu_Output_Voltage  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/fake_psu_Input_Power  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/power/fake_psu_Output_Power  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/current/fake_psu_Output_Current  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/fan_tach/fake_psu_Fan_Speed_1  xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.PSUSensor /xyz/openbmc_project/sensors/temperature/fake_psu_Temperature  xyz.openbmc_project.Sensor.Value Value
+      
+      busctl tree xyz.openbmc_project.IntrusionSensor
+      busctl get-property xyz.openbmc_project.IntrusionSensor /xyz/openbmc_project/Chassis/Intrusion xyz.openbmc_project.Chassis.Intrusion Status
+      busctl set-property xyz.openbmc_project.IntrusionSensor /xyz/openbmc_project/Chassis/Intrusion xyz.openbmc_project.Chassis.Intrusion Status s "Normal"
+      
+      busctl tree xyz.openbmc_project.IntelCPUSensor
+      busctl introspect xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/Margin_CPU0 xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DIMM_A1_CPU0 xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DIMM_B1_CPU0 xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/power/Cpu_Power_CPU0 xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/power/Dimm_Power_CPU0 xyz.openbmc_project.Sensor.Value Value
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalAlarmHigh
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.State.Decorator.OperationalStatus Functional
+      busctl get-property xyz.openbmc_project.IntelCPUSensor /xyz/openbmc_project/sensors/temperature/DTS_CPU0 xyz.openbmc_project.State.Decorator.Availability Available
 
-   busctl tree xyz.openbmc_project.FanSensor
-   busctl introspect xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control
-   busctl introspect xyz.openbmc_project.FanSensor  /xyz/openbmc_project/inventory
-   busctl introspect xyz.openbmc_project.FanSensor /xyz/openbmc_project/sensors
+      busctl tree xyz.openbmc_project.FanSensor
+      busctl introspect xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control
+      busctl introspect xyz.openbmc_project.FanSensor  /xyz/openbmc_project/inventory
+      busctl introspect xyz.openbmc_project.FanSensor /xyz/openbmc_project/sensors
 
-   busctl tree xyz.openbmc_project.ADCSensor
-   busctl introspect xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_P1V8_AUX
-   busctl introspect xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_PVTT
-   busctl introspect   xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_PVDDQ
+      busctl tree xyz.openbmc_project.ADCSensor
+      busctl introspect xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_P1V8_AUX
+      busctl introspect xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_PVTT
+      busctl introspect   xyz.openbmc_project.ADCSensor /xyz/openbmc_project/sensors/voltage/SYS_PVDDQ
+
+      busctl tree xyz.openbmc_project.Software.BMC.Updater
+      busctl introspect xyz.openbmc_project.Software.BMC.Updater /xyz/openbmc_project/software/<id>
+      ......
    
    2）ipmitool 指令：
-   ipmitool mc info
-   ipmitool sel info
-   ipmitool mc selftest
-   ipmitool fru print
-   ipmitool sensor list
-   ipmitool sdr list
-   ipmitool raw 6 1
-   ipmitool raw 6 4
-   ......
-   此外，BMC shell 还支持 fs ls，fs cat 等文件系统指令。还有 kernel heap，kernel thread stacks 等内核查询指令。具体可在 BMC shell 中 "help"
+      ipmitool mc info
+      ipmitool sel info
+      ipmitool sel elist
+      ipmitool mc selftest
+      ipmitool fru print
+      ipmitool sensor list
+      ipmitool sdr list
+      ipmitool raw 6 1
+      ipmitool raw 6 4
+      ......
+
+   3）i2c-tools 指令：
+      i2cdetect
+      i2cdump
+      i2cget
+      i2cset
+      i2ctransfer
+
+   4) 其他 shell 指令：
+      > 查看 fan-sensor 的 pwm 和 fan 文件
+         fs cat /sys/class/hwmon/hwmon1/fan1_input
+         fs cat /sys/class/hwmon/hwmon2/fan2_input
+         fs cat /sys/class/hwmon/hwmon1/pwm1
+         fs cat /sys/class/hwmon/hwmon2/pwm2
+         ......
+   
+      > 查询adc-sensor文件
+         fs cat /sys/class/hwmon/hwmon0/in1_input
+         ......
+
+      > 查询其他 sensor 的文件方法相同
+         查看目录：fs ls /sys/class/hwmon
+         查看文件内容：fs cat /sys/class/hwmon/......
+         ......
+
+      > 查询存盘固件版本
+         fs ls /mnt/images
+
+      > 查询 a/b 分区状态变量
+         fwprintenv
+
+      此外，BMC shell 还支持其他文件系统指令，还有 kernel heap，kernel thread stacks 等内核查询指令。具体可在 BMC shell 中 "help" 查看。
 
 2. 带外测试指令：
    带外安装 ipmitool 工具 [可以使用Linux或者windows版本] 使用带外指令进行相关的验证。
@@ -405,22 +510,39 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
       获取自测结果
          ipmitool -I lanplus -H 192.0.2.13 -U admin -P bypass -C 17 raw 0x06 0x04
 
+      获取系统事件日志中第 1 条记录
+         ipmitool -I lanplus -H 192.0.2.13 -U admin -P bypass sel get 1
+
       其他
          ipmitool -I lanplus -H 192.0.2.13 -U admin -P bypass -C 17 raw 0x06 0x36
 
-3. 使用 shell 查看 sensor 的 sysfs 文件
-   > 查看 fan-sensor 的 pwm 和 fan 文件
-      fs cat /sys/class/hwmon/hwmon1/fan1_input
-      fs cat /sys/class/hwmon/hwmon2/fan2_input
-      fs cat /sys/class/hwmon/hwmon1/pwm1
-      fs cat /sys/class/hwmon/hwmon2/pwm2
-   
-   > 查询adc-sensor文件
-      fs cat /sys/class/hwmon/hwmon0/in1_input
+3. Redfish 指令：
+      优先使用 linux 版本的 redfish 工具
 
-   > 查询其他 sensor 的文件方法相同
-      查看目录：fs ls /sys/class/hwmon
-      查看文件内容：fs cat /sys/class/hwmon/......
+      列出所有事件日志条目
+         curl -k -u root:0penBmc https://192.0.2.13/redfish/v1/Systems/system/LogServices/EventLog/Entries/
+
+      获取第 1 条事件日志条目
+         curl -k -u root:0penBmc https://192.0.2.13/redfish/v1/Systems/system/LogServices/EventLog/Entries/1
+
+      获取 sensor list
+         curl -k -u root:0penBmc -sS -i https://192.0.2.13/redfish/v1/Chassis/MOC2600/Sensors
+
+      固件升级
+         curl -k -u root:0penBmc --data-binary @firmware_update/obmc-image-lsqsh_evb-v1.1.0.tar.gz https://192.0.2.13/redfish/v1/UpdateService/update
+
+4. SSH 远程连接
+   > ssh root@192.0.2.13
+   > 用户名密码任意
+
+5. SCP 文件传输
+   > scp <文件> root@192.0.2.13:/mnt/
+   > 上传目录固定为：/mnt/tmp/
+
+6. BMCWEB 网页管理工具
+   > https://192.0.2.13
+   > 用户名/密码：root/0penBmc
+   > 目前可以查询 SEL 日志和部分硬件信息，还支持固件升级
 ```
 #### 三、应用已知问题和局限性
 ```jsx
@@ -450,6 +572,13 @@ export CROSS_COMPILE=<你的path>/Xuantie-900-gcc-elf-newlib-x86_64-V3.0.1/bin/r
    - Fan sensor 会使用 hwmon_pwm_tach - class 0
    - 其他 sensor (ExternalSensor, HwmonTempSensor, PSUSensor, IntrusionSensor, IntelCPUSensor) 会使用 hwmon_general - class 5
    - Hwmon 在设备树中的定义方法，请参考：zephyr/dts/bindings/hwmon/linkedsemi,hwmon.yaml
+
+7. BMCWEB
+   - 目前还不支持用户管理，用户都赋予admin权限
+   - 部分功能未打开或不支持
+
+8. SEL
+   - 目前还没使能 RTC/NTP，日志只有开机时间，没有真实时间
 ```
 
 ## dbus-broker
